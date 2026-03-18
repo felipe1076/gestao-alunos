@@ -939,3 +939,147 @@ select option {
     transform: translateX(-50%) translateY(0);
     opacity: 1;
 }
+
+/* ─── COMPACT STUDENT LIST ──────────────────────────────────────────── */
+.student-compact-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.student-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 0.9rem;
+    border-radius: var(--radius-md);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    cursor: pointer;
+    transition: transform 0.15s ease, background 0.2s;
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
+    overflow: hidden;
+}
+
+.student-row:active {
+    transform: scale(0.985);
+    background: var(--glass-border);
+}
+
+/* Avatar circle with initials */
+.student-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: white;
+    flex-shrink: 0;
+    letter-spacing: 0.5px;
+}
+
+/* Middle info block */
+.student-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.student-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+}
+
+.student-class-tag {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Visto badge */
+.visto-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: var(--success-bg);
+    color: var(--success);
+    padding: 0.28rem 0.6rem;
+    border-radius: 99px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.visto-badge i {
+    font-size: 0.7rem;
+}
+
+/* Chevron icon */
+.student-chevron {
+    color: var(--primary);
+    font-size: 0.9rem;
+    flex-shrink: 0;
+    opacity: 0.7;
+}
+
+/* Edit button that appears on the row (subtle) */
+.student-row-edit {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 0.3rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: color 0.2s, background 0.2s;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.student-row-edit:active {
+    color: var(--primary);
+    background: var(--glass-border);
+}
+
+/* Empty state */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    opacity: 0.3;
+}
+
+.empty-state p {
+    font-size: 0.95rem;
+}
+
+/* Compact list count header */
+.list-count-header {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin-bottom: 0.4rem;
+    padding-left: 0.25rem;
+}

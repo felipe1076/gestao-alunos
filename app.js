@@ -234,6 +234,23 @@ const setupSwipe = (element, onSwipeLeft, onSwipeRight) => {
     // Also support fallback buttons for desktop or clicks inside actions
 };
 
+// Avatar color palette — generates a consistent color per name
+const AVATAR_COLORS = [
+    '#6366f1','#8b5cf6','#ec4899','#f97316',
+    '#10b981','#3b82f6','#ef4444','#f59e0b',
+    '#14b8a6','#a855f7'
+];
+const getAvatarColor = (name) => {
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+};
+const getInitials = (name) => {
+    const parts = name.trim().split(' ').filter(Boolean);
+    if (parts.length === 1) return parts[0][0].toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+};
+
 // Renders
 const renderStudents = () => {
     const list = document.getElementById("student-list");
@@ -256,31 +273,55 @@ const renderStudents = () => {
     if (sort === "tasks-desc") students.sort((a, b) => b._metrics.completed - a._metrics.completed);
 
     list.innerHTML = "";
-    if (students.length === 0) list.innerHTML = `<p class="text-secondary ms-2">Nenhum aluno encontrado.</p>`;
+
+    if (students.length === 0) {
+        list.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-user-graduate"></i>
+                <p>Nenhum aluno encontrado.<br>Toque em <b>Novo Aluno</b> para começar.</p>
+            </div>`;
+        return;
+    }
+
+    // Count header
+    const counter = document.createElement('div');
+    counter.className = 'list-count-header';
+    counter.textContent = `${students.length} aluno${students.length !== 1 ? 's' : ''}`;
+    list.appendChild(counter);
+
+    // Compact list wrapper
+    const compactList = document.createElement('div');
+    compactList.className = 'student-compact-list';
 
     students.forEach(s => {
-        const el = document.createElement('div');
-        el.className = "card glass";
-        el.innerHTML = `
-            <div onclick="openStudentDetails('${s.id}')" style="flex: 1; display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <div class="card-top">
-                        <div class="card-title">${s.name}</div>
-                    </div>
-                    <div class="subtitle mt-2">${s.class || 'Sem Turma'} &bull; Soma: ${s._metrics.avg}</div>
-                </div>
-                <div>
-                    <button class="btn-primary ripple" style="border-radius: 20px; padding: 0.5rem 1rem; font-size: 0.95rem; display: flex; align-items: center; gap: 0.4rem;" onclick="openStudentDetails('${s.id}')">
-                        <i class="fas fa-check-circle"></i> ${s._metrics.completed}
-                    </button>
-                </div>
+        const color = getAvatarColor(s.name);
+        const initials = getInitials(s.name);
+        const row = document.createElement('div');
+        row.className = 'student-row';
+        row.innerHTML = `
+            <div class="student-avatar" style="background:${color};">${initials}</div>
+            <div class="student-info">
+                <div class="student-name">${s.name}</div>
+                <div class="student-class-tag">${s.class || 'Sem turma'}</div>
             </div>
-            <div style="display: flex; gap: 0.5rem; border-top: 1px solid var(--glass-border); padding-top: 0.5rem; margin-top: 0.25rem; justify-content: flex-end;">
-                <button class="icon-btn" onclick="editStudentAction(event, '${s.id}')" aria-label="Editar"><i class="fas fa-edit"></i></button>
+            <div class="visto-badge">
+                <i class="fas fa-check-circle"></i>
+                ${s._metrics.completed}
             </div>
+            <button class="student-row-edit" onclick="editStudentAction(event, '${s.id}')" aria-label="Editar aluno">
+                <i class="fas fa-pen"></i>
+            </button>
+            <i class="fas fa-chevron-right student-chevron"></i>
         `;
-        list.appendChild(el);
+        row.addEventListener('click', (e) => {
+            if (!e.target.closest('.student-row-edit')) {
+                openStudentDetails(s.id);
+            }
+        });
+        compactList.appendChild(row);
     });
+
+    list.appendChild(compactList);
 };
 
 document.getElementById("search-student").addEventListener('input', renderStudents);
