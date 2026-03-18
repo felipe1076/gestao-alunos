@@ -123,17 +123,21 @@ const getStudentMetrics = (studentId) => {
 // Theme
 const initTheme = () => {
     const theme = localStorage.getItem("escola_theme") || "light";
-    document.documentElement.setAttribute("data-theme", theme);
-    document.getElementById("theme-toggle").innerHTML = theme === "dark"
-        ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+    setTheme(theme);
 };
-document.getElementById("theme-toggle").addEventListener('click', () => {
-    let theme = document.documentElement.getAttribute("data-theme");
-    theme = theme === "dark" ? "light" : "dark";
+
+const setTheme = (theme) => {
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem("escola_theme", theme);
-    document.getElementById("theme-toggle").innerHTML = theme === "dark"
-        ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+    
+    // Update theme selector buttons
+    document.querySelectorAll(".theme-btn").forEach(btn => {
+        btn.classList.toggle("active-theme", btn.dataset.setTheme === theme);
+    });
+};
+
+document.querySelectorAll("[data-set-theme]").forEach(btn => {
+    btn.addEventListener('click', () => setTheme(btn.dataset.setTheme));
 });
 
 // Navigation
@@ -255,7 +259,6 @@ const renderStudents = () => {
             </div>
             <div style="display: flex; gap: 0.5rem; border-top: 1px solid var(--glass-border); padding-top: 0.5rem; margin-top: 0.25rem; justify-content: flex-end;">
                 <button class="icon-btn" onclick="editStudentAction(event, '${s.id}')" aria-label="Editar"><i class="fas fa-edit"></i></button>
-                <button class="icon-btn" onclick="deleteStudentAction(event, '${s.id}')" aria-label="Excluir"><i class="fas fa-trash text-danger"></i></button>
             </div>
         `;
         list.appendChild(el);
@@ -348,15 +351,7 @@ window.editStudentAction = (e, id) => {
 
 window.deleteStudentAction = (e, id) => {
     if (e) e.stopPropagation();
-    if (confirm("Tem certeza que deseja apagar este aluno e TODAS as suas tarefas permanentemente?")) {
-        DB.deleteStudent(id);
-        if (currentStudentId === id) {
-            navigateTo('view-students');
-        } else {
-            renderStudents();
-        }
-        showToast("Aluno excluído com sucesso!");
-    }
+    // Action removed
 };
 
 window.deleteTaskAction = (id) => {
@@ -476,14 +471,6 @@ document.getElementById("btn-edit-student").addEventListener('click', () => {
         document.getElementById("student-class").value = st.class;
         document.getElementById("modal-student-title").innerText = "Editar Aluno";
         openModal("modal-student");
-    }
-});
-
-document.getElementById("btn-delete-student").addEventListener('click', () => {
-    if (confirm("Tem certeza que deseja apagar este aluno e todas as suas tarefas?")) {
-        DB.deleteStudent(currentStudentId);
-        showToast("Aluno excluído");
-        navigateTo('view-students');
     }
 });
 

@@ -22,9 +22,6 @@
                 <div style="display: flex; gap: 0.5rem; align-items: center;">
                     <input type="month" id="global-month-filter"
                         style="border:1px solid var(--glass-border); border-radius: 8px; padding: 0.4rem; background: var(--bg-base); color: var(--text-primary); font-family: inherit;">
-                    <button id="theme-toggle" class="icon-btn ripple" aria-label="Alternar tema">
-                        <i class="fas fa-moon"></i>
-                    </button>
                 </div>
             </div>
         </header>
@@ -79,9 +76,6 @@
                     </div>
                     <button id="btn-edit-student" class="icon-btn ripple">
                         <i class="fas fa-edit"></i>
-                    </button>
-                    <button id="btn-delete-student" class="icon-btn tr ripple">
-                        <i class="fas fa-trash text-danger"></i>
                     </button>
                 </div>
 
@@ -163,6 +157,24 @@
                 </div>
 
                 <div class="settings-list mt-4">
+                    <!-- Theme Selector -->
+                    <div class="setting-item glass" style="display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem; cursor: default;">
+                        <div class="setting-info w-100">
+                            <h4>Tema do Sistema</h4>
+                            <span>Escolha a cor principal do aplicativo</span>
+                        </div>
+                        <div class="theme-selector" style="display: flex; gap: 1rem; margin-top: 0.5rem; flex-wrap: wrap;">
+                            <button class="theme-btn" data-set-theme="light" style="background: #e2e8f0;" title="Claro"></button>
+                            <button class="theme-btn" data-set-theme="dark" style="background: #1e293b;" title="Escuro"></button>
+                            <button class="theme-btn" data-set-theme="blue" style="background: #3b82f6;" title="Azul"></button>
+                            <button class="theme-btn" data-set-theme="green" style="background: #10b981;" title="Verde"></button>
+                            <button class="theme-btn" data-set-theme="pink" style="background: #ec4899;" title="Rosa"></button>
+                            <button class="theme-btn" data-set-theme="red" style="background: #ef4444;" title="Vermelho"></button>
+                            <button class="theme-btn" data-set-theme="purple" style="background: #8b5cf6;" title="Roxo"></button>
+                            <button class="theme-btn" data-set-theme="orange" style="background: #f97316;" title="Laranja"></button>
+                        </div>
+                    </div>
+
                     <div class="setting-item glass" id="btn-manage-classes">
                         <div class="setting-info">
                             <h4>Gerenciar Turmas</h4>
