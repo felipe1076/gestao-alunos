@@ -6,6 +6,8 @@ const DB = {
     saveStudents: (data) => localStorage.setItem('escola_alunos', JSON.stringify(data)),
     getTasks: () => JSON.parse(localStorage.getItem('escola_tarefas') || '[]'),
     saveTasks: (data) => localStorage.setItem('escola_tarefas', JSON.stringify(data)),
+    getClasses: () => JSON.parse(localStorage.getItem('escola_classes') || '[]'),
+    saveClasses: (data) => localStorage.setItem('escola_classes', JSON.stringify(data)),
 
     addStudent: (student) => {
         const students = DB.getStudents();
@@ -216,9 +218,13 @@ const renderStudents = () => {
     let students = DB.getStudents();
     const query = document.getElementById("search-student").value.toLowerCase();
     const sort = document.getElementById("sort-students").value;
+    const clsFilter = document.getElementById("filter-students-class").value;
 
     if (query) {
         students = students.filter(s => s.name.toLowerCase().includes(query) || (s.class && s.class.toLowerCase().includes(query)));
+    }
+    if (clsFilter) {
+        students = students.filter(s => s.class === clsFilter);
     }
 
     students.forEach(s => s._metrics = getStudentMetrics(s.id));
@@ -258,6 +264,7 @@ const renderStudents = () => {
 
 document.getElementById("search-student").addEventListener('input', renderStudents);
 document.getElementById("sort-students").addEventListener('change', renderStudents);
+document.getElementById("filter-students-class").addEventListener('change', renderStudents);
 
 const openStudentDetails = (id) => {
     currentStudentId = id;
@@ -601,8 +608,94 @@ document.getElementById("btn-clear-data").addEventListener('click', () => {
     }
 });
 
+// --- GERENCIAR TURMAS ---
+const renderClassesConfig = () => {
+    let classes = DB.getClasses();
+
+    // Auto-migrate non-existent classes
+    const students = DB.getStudents();
+    let madeChanges = false;
+    students.forEach(s => {
+        if (s.class && !classes.includes(s.class)) {
+            classes.push(s.class);
+            madeChanges = true;
+        }
+    });
+    if (madeChanges) {
+        classes.sort();
+        DB.saveClasses(classes);
+    }
+
+    const buildOpts = (def) => {
+        let h = `<option value="">${def}</option>`;
+        classes.forEach(c => h += `<option value="${c}">${c}</option>`);
+        return h;
+    };
+
+    const fClass = document.getElementById("filter-students-class");
+    if (fClass) { const v1 = fClass.value; fClass.innerHTML = buildOpts("Todas as Turmas"); fClass.value = v1; }
+
+    const sClass = document.getElementById("student-class");
+    if (sClass) { const v2 = sClass.value; sClass.innerHTML = buildOpts("Selecione a Turma"); sClass.value = v2; }
+
+    const bClass = document.getElementById("bulk-class");
+    if (bClass) { const v3 = bClass.value; bClass.innerHTML = buildOpts("Nenhuma / Sem Turma"); bClass.value = v3; }
+
+    const list = document.getElementById("classes-list");
+    if (list) {
+        list.innerHTML = "";
+        if (classes.length === 0) list.innerHTML = "<p class='text-secondary'>Nenhuma turma cadastrada.</p>";
+
+        classes.forEach(c => {
+            const d = document.createElement("div");
+            d.className = "setting-item glass";
+            d.innerHTML = `
+                <div style="flex:1;"><b>${c}</b></div>
+                <button class="icon-btn text-danger" onclick="deleteClassAction('${c}')"><i class="fas fa-trash"></i></button>
+            `;
+            list.appendChild(d);
+        });
+    }
+};
+
+window.deleteClassAction = (c) => {
+    if (confirm(`Excluir a turma "${c}" do cadastro? Os alunos NÃO serão apagados, mas a turma sumirá das opções.`)) {
+        let classes = DB.getClasses().filter(x => x !== c);
+        DB.saveClasses(classes);
+        renderClassesConfig();
+        renderStudents();
+    }
+};
+
+const btnManageClasses = document.getElementById("btn-manage-classes");
+if (btnManageClasses) {
+    btnManageClasses.addEventListener('click', () => {
+        renderClassesConfig();
+        openModal("modal-manage-classes");
+    });
+}
+
+const formAddClass = document.getElementById("form-add-class");
+if (formAddClass) {
+    formAddClass.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const val = document.getElementById("new-class-name").value.trim();
+        if (val) {
+            let classes = DB.getClasses();
+            if (!classes.includes(val)) {
+                classes.push(val);
+                classes.sort();
+                DB.saveClasses(classes);
+                document.getElementById("new-class-name").value = "";
+                renderClassesConfig();
+            } else {
+                showToast("Turma já cadastrada", "error");
+            }
+        }
+    });
+}
+
 // Boot
 initTheme();
+renderClassesConfig();
 renderStudents();
-
-// Populate initial dummy data if empty for demonstration? No, let's leave it clean as requested.

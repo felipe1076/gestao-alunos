@@ -40,7 +40,13 @@
                 </div>
 
                 <div class="controls-row">
-                    <div class="select-wrapper">
+                    <div class="select-wrapper" style="flex: 1;">
+                        <select id="filter-students-class">
+                            <option value="">Todas as Turmas</option>
+                        </select>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="select-wrapper" style="flex: 1;">
                         <select id="sort-students">
                             <option value="name-asc">Nome (A-Z)</option>
                             <option value="name-desc">Nome (Z-A)</option>
@@ -157,6 +163,14 @@
                 </div>
 
                 <div class="settings-list mt-4">
+                    <div class="setting-item glass" id="btn-manage-classes">
+                        <div class="setting-info">
+                            <h4>Gerenciar Turmas</h4>
+                            <span>Cadastrar ou remover turmas do sistema</span>
+                        </div>
+                        <i class="fas fa-chalkboard text-primary icon-action"></i>
+                    </div>
+
                     <div class="setting-item glass" id="btn-export-json">
                         <div class="setting-info">
                             <h4>Exportar Backup (JSON)</h4>
@@ -238,7 +252,10 @@
                 alunos (um aluno por linha).</p>
             <div class="input-group">
                 <label>Turma (Opcional - aplicada para todos)</label>
-                <input type="text" id="bulk-class" placeholder="Ex: 3º Ano B">
+                <select id="bulk-class"
+                    style="width: 100%; padding: 0.8rem; background: var(--bg-base); border: 1px solid var(--glass-border); border-radius: var(--radius-md); color: var(--text-primary); font-family: inherit; outline: none;">
+                    <option value="">Nenhuma / Sem Turma</option>
+                </select>
             </div>
             <div class="input-group">
                 <textarea id="bulk-names" rows="6" required placeholder="Maria Silva&#10;João Marcos&#10;Pedro Alves..."
@@ -249,6 +266,27 @@
     </div>
 
 
+
+    <!-- Manage Classes Modal -->
+    <div id="modal-manage-classes" class="modal glass-modal">
+        <div class="modal-header">
+            <h3>Gerenciar Turmas</h3>
+            <button class="icon-btn close-modal"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <form id="form-add-class" style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                <input type="text" id="new-class-name" required placeholder="Ex: 3º Ano B"
+                    style="flex: 1; padding: 0.6rem; border-radius: var(--radius-md); border: 1px solid var(--glass-border); background: var(--bg-base); color: var(--text-primary); font-family: inherit; outline: none;">
+                <button type="submit" class="btn-primary ripple" style="padding: 0.6rem 1rem;">Cadastrar</button>
+            </form>
+            <div id="classes-list"
+                style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 300px; overflow-y: auto;">
+                <!-- Lista de turmas gerada via JS -->
+            </div>
+            <p class="text-secondary" style="font-size: 0.8rem; margin-top: 1rem;">Nota: Apagar uma turma aqui não apaga
+                os alunos, apenas remove a turma da lista de cadastro.</p>
+        </div>
+    </div>
 
     <!-- Student Modal -->
     <div id="modal-student" class="modal glass-modal">
@@ -264,7 +302,10 @@
             </div>
             <div class="input-group">
                 <label for="student-class">Turma / Série</label>
-                <input type="text" id="student-class" required placeholder="Ex: 3º Ano B">
+                <select id="student-class" required
+                    style="width: 100%; padding: 0.8rem; background: var(--bg-base); border: 1px solid var(--glass-border); border-radius: var(--radius-md); color: var(--text-primary); font-family: inherit; outline: none;">
+                    <option value="">Selecione a Turma</option>
+                </select>
             </div>
             <button type="submit" class="btn-primary ripple w-100 mt-2">Salvar Aluno</button>
         </form>
