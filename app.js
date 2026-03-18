@@ -140,14 +140,21 @@ document.querySelectorAll("[data-set-theme]").forEach(btn => {
     btn.addEventListener('click', () => setTheme(btn.dataset.setTheme));
 });
 
-// Navigation
-const navigateTo = (viewId, push = true) => {
-    const views = document.querySelectorAll(".view");
+// ─── NAVIGATION STACK ───────────────────────────────────────────────
+// We manage our own stack so the OS back button never exits the app.
+// Strategy: always keep at least one "dummy" history entry ahead of us,
+// so popstate is always triggered and we handle it ourselves.
+const navStack = [];
+
+const _pushDummyState = () => {
+    history.pushState({ appInternal: true }, '');
+};
+
+const navigateTo = (viewId) => {
     const targetView = document.getElementById(viewId);
-    
     if (!targetView) return;
 
-    views.forEach(v => v.classList.remove("active"));
+    document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
     targetView.classList.add("active");
 
     document.querySelectorAll(".nav-item").forEach(n => {
@@ -158,10 +165,11 @@ const navigateTo = (viewId, push = true) => {
     if (viewId === 'view-students') renderStudents();
     if (viewId === 'view-reports') renderReports();
 
-    // Push history state if requested
-    if (push && (!history.state || history.state.view !== viewId)) {
-        history.pushState({ view: viewId }, '');
-    }
+    // Track in our own stack
+    navStack.push({ type: 'view', id: viewId });
+
+    // Always keep a dummy state ahead so popstate fires on back
+    _pushDummyState();
 };
 
 document.querySelectorAll(".nav-item, .back-btn").forEach(btn => {
@@ -429,41 +437,70 @@ const renderReports = () => {
 const openModal = (id) => {
     const modal = document.getElementById(id);
     if (!modal) return;
-    
+
     modal.classList.add("active");
     document.getElementById("modal-overlay").classList.add("active");
-    
-    // Push a state for the modal
-    history.pushState({ modal: id }, '');
+
+    // Track modal in our stack
+    navStack.push({ type: 'modal', id });
+    _pushDummyState();
 };
 
-const closeModal = (fromPopState = false) => {
-    const activeModals = document.querySelectorAll(".modal.active");
-    if (activeModals.length === 0) return;
-
-    activeModals.forEach(m => m.classList.remove("active"));
+const closeModal = () => {
+    document.querySelectorAll(".modal").forEach(m => m.classList.remove("active"));
     document.getElementById("modal-overlay").classList.remove("active");
 
-    // If closed manually (not via back button), we need to go back in history
-    if (!fromPopState && history.state && history.state.modal) {
-        history.back();
+    // Remove modal entries from our stack
+    while (navStack.length && navStack[navStack.length - 1].type === 'modal') {
+        navStack.pop();
     }
 };
 
-// Handle Back Button
-window.addEventListener('popstate', (event) => {
+// ─── BACK BUTTON HANDLER ────────────────────────────────────────────
+// The OS fires popstate when the user presses back.
+// We consume it and decide what to do based on our own navStack.
+window.addEventListener('popstate', () => {
+    // Check if a modal is open — close it first
     const activeModal = document.querySelector(".modal.active");
-    
     if (activeModal) {
-        // Just close the modal, don't trigger history.back() again
-        closeModal(true);
-    } else if (event.state && event.state.view) {
-        // Navigate to the state's view without pushing new history
-        navigateTo(event.state.view, false);
-    } else {
-        // Default fallback
-        navigateTo('view-students', false);
+        closeModal();
+        _pushDummyState(); // Re-add dummy so next back press is also caught
+        return;
     }
+
+    // Pop our own stack
+    if (navStack.length > 0) navStack.pop();
+
+    const prev = navStack.length > 0 ? navStack[navStack.length - 1] : null;
+
+    if (prev && prev.type === 'view' && prev.id !== 'view-students') {
+        // Go to previous view (e.g. student details → students list)
+        const targetView = document.getElementById(prev.id);
+        if (targetView) {
+            document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+            targetView.classList.add("active");
+            document.querySelectorAll(".nav-item").forEach(n => {
+                n.classList.remove("active");
+                if (n.dataset.target === prev.id) n.classList.add("active");
+            });
+            if (prev.id === 'view-students') renderStudents();
+            if (prev.id === 'view-reports') renderReports();
+        }
+    } else {
+        // Fallback: go to students list
+        document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+        document.getElementById('view-students').classList.add("active");
+        document.querySelectorAll(".nav-item").forEach(n => {
+            n.classList.remove("active");
+            if (n.dataset.target === 'view-students') n.classList.add("active");
+        });
+        renderStudents();
+        navStack.length = 0;
+        navStack.push({ type: 'view', id: 'view-students' });
+    }
+
+    // Always push a new dummy so the next back press fires popstate too
+    _pushDummyState();
 });
 
 document.querySelectorAll(".close-modal").forEach(b => b.addEventListener('click', () => closeModal()));
@@ -707,12 +744,22 @@ if (formAddClass) {
     });
 }
 
-// Boot
+// ─── BOOT ───────────────────────────────────────────────────────────
 initTheme();
 renderClassesConfig();
 renderStudents();
 
-// Initialize history state
-if (!history.state) {
-    history.replaceState({ view: 'view-students' }, '');
+// Seed navigation stack with the initial view
+navStack.push({ type: 'view', id: 'view-students' });
+
+// Replace the current history entry with a base state,
+// then push a dummy so the FIRST back press is caught by popstate
+history.replaceState({ appBase: true }, '');
+_pushDummyState();
+
+// Register Service Worker for PWA support
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+    });
 }
