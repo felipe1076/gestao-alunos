@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gestão Escolar - Vistos e Tarefas</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="app-header glass">
+            <h1 id="header-title">Alunos</h1>
+            <button id="theme-toggle" class="icon-btn ripple" aria-label="Alternar tema">
+                <i class="fas fa-moon"></i>
+            </button>
+        </header>
+
+        <!-- Main Content -->
+        <main id="main-content">
+            
+            <!-- View: Students -->
+            <section id="view-students" class="view active">
+                <div class="search-container glass">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="search-student" placeholder="Buscar aluno...">
+                </div>
+                
+                <div class="controls-row">
+                    <div class="select-wrapper">
+                        <select id="sort-students">
+                            <option value="name-asc">Nome (A-Z)</option>
+                            <option value="name-desc">Nome (Z-A)</option>
+                            <option value="tasks-desc">Mais Concluintes</option>
+                        </select>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
+
+                <div id="student-list" class="list">
+                    <!-- Cards -->
+                </div>
+
+                <button id="btn-add-student" class="fab ripple" aria-label="Adicionar Aluno">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </section>
+
+            <!-- View: Student Details (Tasks) -->
+            <section id="view-student-details" class="view">
+                <div class="details-top glass">
+                    <button class="icon-btn back-btn ripple" data-target="view-students">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <div>
+                        <h2 id="detail-student-name">Nome</h2>
+                        <span id="detail-student-class" class="subtitle">Turma</span>
+                    </div>
+                    <button id="btn-edit-student" class="icon-btn ripple">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button id="btn-delete-student" class="icon-btn tr ripple">
+                        <i class="fas fa-trash text-danger"></i>
+                    </button>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card glass border-success">
+                        <span class="stat-value text-success" id="detail-stat-completed">0</span>
+                        <span class="stat-label">Vistos ✅</span>
+                    </div>
+                    <div class="stat-card glass border-pending">
+                        <span class="stat-value text-pending" id="detail-stat-pending">0</span>
+                        <span class="stat-label">Pendentes ⏳</span>
+                    </div>
+                    <div class="stat-card glass border-primary">
+                        <span class="stat-value text-primary" id="detail-stat-avg">-</span>
+                        <span class="stat-label">Média 📈</span>
+                    </div>
+                </div>
+
+                <div class="controls-row mt-4">
+                    <h3>Tarefas</h3>
+                    <div class="select-wrapper small">
+                        <select id="sort-tasks">
+                            <option value="date-desc">Recentes</option>
+                            <option value="date-asc">Antigas</option>
+                            <option value="status">Status</option>
+                        </select>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
+                <div class="swipe-hint">
+                    <small><i class="fas fa-hand-point-right"></i> Deslize para a direita para dar Visto, e para a esquerda para Excluir.</small>
+                </div>
+
+                <div id="task-list" class="list pb-extended">
+                    <!-- Tasks -->
+                </div>
+
+                <button id="btn-add-task" class="fab ripple" aria-label="Adicionar Tarefa">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </section>
+
+            <!-- View: Reports -->
+            <section id="view-reports" class="view">
+                <div class="reports-header glass">
+                    <h2>Métricas e Relatórios</h2>
+                    <p>Visão geral de todas as turmas e atividades.</p>
+                </div>
+
+                <div class="stats-grid mt-4">
+                    <div class="stat-card glass">
+                        <i class="fas fa-check-double text-success fa-2x mb-2"></i>
+                        <span class="stat-value" id="report-total-vistos">0</span>
+                        <span class="stat-label">Total de Vistos</span>
+                    </div>
+                    <div class="stat-card glass">
+                        <i class="fas fa-users text-primary fa-2x mb-2"></i>
+                        <span class="stat-value" id="report-total-alunos">0</span>
+                        <span class="stat-label">Total de Alunos</span>
+                    </div>
+                    <div class="stat-card glass">
+                        <i class="fas fa-star text-pending fa-2x mb-2"></i>
+                        <span class="stat-value" id="report-geral-media">-</span>
+                        <span class="stat-label">Média Geral</span>
+                    </div>
+                </div>
+
+                <h3 class="mt-4 ms-2">Ranking (Mais Tarefas)</h3>
+                <div id="report-top-students" class="list mt-2">
+                    <!-- Top students -->
+                </div>
+            </section>
+
+            <!-- View: Settings -->
+            <section id="view-settings" class="view">
+                <div class="settings-header glass">
+                    <h2>Configurações</h2>
+                    <p>Gerencie seus dados locais de forma segura.</p>
+                </div>
+
+                <div class="settings-list mt-4">
+                    <div class="setting-item glass" id="btn-export-json">
+                        <div class="setting-info">
+                            <h4>Exportar Backup (JSON)</h4>
+                            <span>Cópia completa do banco de dados</span>
+                        </div>
+                        <i class="fas fa-download icon-action"></i>
+                    </div>
+
+                    <div class="setting-item glass" id="btn-export-csv">
+                        <div class="setting-info">
+                            <h4>Exportar Relatório (CSV)</h4>
+                            <span>Planilha legível com notas</span>
+                        </div>
+                        <i class="fas fa-file-excel icon-action"></i>
+                    </div>
+
+                    <label class="setting-item glass" for="import-json">
+                        <div class="setting-info">
+                            <h4>Restaurar Backup (JSON)</h4>
+                            <span>Importe dados de um arquivo</span>
+                        </div>
+                        <i class="fas fa-upload icon-action"></i>
+                        <input type="file" id="import-json" accept=".json" style="display: none;">
+                    </label>
+
+                    <div class="setting-item glass danger" id="btn-clear-data">
+                        <div class="setting-info">
+                            <h4>Apagar Todos os Dados</h4>
+                            <span>Remove alunos e tarefas (Atenção)</span>
+                        </div>
+                        <i class="fas fa-trash icon-action text-danger"></i>
+                    </div>
+                </div>
+
+                <div class="db-footer">
+                    <i class="fas fa-shield-alt"></i>
+                    <p><b>Privacidade 100%:</b> Nenhum dado é enviado para a nuvem. O banco de dados (IndexedDB/LocalStorage) funciona totalmente offline em seu navegador.</p>
+                </div>
+            </section>
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav glass-nav">
+            <button class="nav-item active ripple" data-target="view-students">
+                <i class="fas fa-user-graduate"></i>
+                <span>Alunos</span>
+            </button>
+            <button class="nav-item ripple" data-target="view-reports">
+                <i class="fas fa-chart-line"></i>
+                <span>Métricas</span>
+            </button>
+            <button class="nav-item ripple" data-target="view-settings">
+                <i class="fas fa-cog"></i>
+                <span>Config</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Modals -->
+    <div id="modal-overlay" class="modal-overlay"></div>
+
+    <!-- Student Modal -->
+    <div id="modal-student" class="modal glass-modal">
+        <div class="modal-header">
+            <h3 id="modal-student-title">Novo Aluno</h3>
+            <button class="icon-btn close-modal"><i class="fas fa-times"></i></button>
+        </div>
+        <form id="form-student" class="modal-body">
+            <input type="hidden" id="student-id">
+            <div class="input-group">
+                <label for="student-name">Nome Completo</label>
+                <input type="text" id="student-name" required placeholder="Digite o nome do aluno">
+            </div>
+            <div class="input-group">
+                <label for="student-class">Turma / Série</label>
+                <input type="text" id="student-class" required placeholder="Ex: 3º Ano B">
+            </div>
+            <button type="submit" class="btn-primary ripple w-100 mt-2">Salvar Aluno</button>
+        </form>
+    </div>
+
+    <!-- Task Modal -->
+    <div id="modal-task" class="modal glass-modal">
+        <div class="modal-header">
+            <h3 id="modal-task-title">Nova Tarefa</h3>
+            <button class="icon-btn close-modal"><i class="fas fa-times"></i></button>
+        </div>
+        <form id="form-task" class="modal-body">
+            <input type="hidden" id="task-id">
+            <div class="input-group">
+                <label for="task-name">Descrição da Tarefa</label>
+                <input type="text" id="task-name" required placeholder="Ex: Exercício de Física pág 30">
+            </div>
+            <div class="input-group">
+                <label for="task-date">Data</label>
+                <input type="date" id="task-date" required>
+            </div>
+            <div class="input-group">
+                <label>Status</label>
+                <div class="segmented-control">
+                    <input type="radio" id="status-pending" name="task-status" value="pendente" checked>
+                    <label for="status-pending" class="segment ripple">⏳ Pendente</label>
+                    
+                    <input type="radio" id="status-done" name="task-status" value="concluido">
+                    <label for="status-done" class="segment ripple">✅ Visto</label>
+                </div>
+            </div>
+            <div class="input-group">
+                <label for="task-grade">Nota / Conceito (Opcional)</label>
+                <input type="text" id="task-grade" placeholder="Ex: 10, A, MB">
+            </div>
+            <button type="submit" class="btn-primary ripple w-100 mt-2">Salvar Tarefa</button>
+        </form>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast glass">Mensagem</div>
+
+    <script src="app.js"></script>
+</body>
+</html>
