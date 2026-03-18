@@ -315,10 +315,18 @@ h4 {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 1.25rem;
-    margin: 1rem;
+    padding: 0.85rem 1.25rem;
+    margin: 0.75rem 1rem;
     border-radius: var(--radius-lg);
     z-index: 10;
+}
+
+#header-title span {
+    background: linear-gradient(135deg, var(--text-primary), var(--primary));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 700;
 }
 
 /* Main Content Area */
