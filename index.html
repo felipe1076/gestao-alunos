@@ -16,12 +16,17 @@
 
 <body>
     <div id="app">
-        <!-- Header -->
-        <header class="app-header glass">
-            <h1 id="header-title">Alunos</h1>
-            <button id="theme-toggle" class="icon-btn ripple" aria-label="Alternar tema">
-                <i class="fas fa-moon"></i>
-            </button>
+        <header class="app-header glass" style="flex-wrap: wrap; gap: 0.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <h1 id="header-title" style="font-size: 1.4rem;">Gestão</h1>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <input type="month" id="global-month-filter"
+                        style="border:1px solid var(--glass-border); border-radius: 8px; padding: 0.4rem; background: var(--bg-base); color: var(--text-primary); font-family: inherit;">
+                    <button id="theme-toggle" class="icon-btn ripple" aria-label="Alternar tema">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                </div>
+            </div>
         </header>
 
         <!-- Main Content -->
@@ -78,10 +83,6 @@
                     <div class="stat-card glass border-success">
                         <span class="stat-value text-success" id="detail-stat-completed">0</span>
                         <span class="stat-label">Vistos ✅</span>
-                    </div>
-                    <div class="stat-card glass border-pending">
-                        <span class="stat-value text-pending" id="detail-stat-pending">0</span>
-                        <span class="stat-label">Pendentes ⏳</span>
                     </div>
                     <div class="stat-card glass border-primary">
                         <span class="stat-value text-primary" id="detail-stat-avg">-</span>
@@ -164,6 +165,14 @@
                         <i class="fas fa-download icon-action"></i>
                     </div>
 
+                    <div class="setting-item glass" id="btn-bulk-students">
+                        <div class="setting-info">
+                            <h4>Cadastrar Turma (Lista Automática)</h4>
+                            <span>Cole até 50 nomes de uma só vez</span>
+                        </div>
+                        <i class="fas fa-users icon-action text-primary"></i>
+                    </div>
+
                     <div class="setting-item glass" id="btn-export-csv">
                         <div class="setting-info">
                             <h4>Exportar Relatório (CSV)</h4>
@@ -218,6 +227,27 @@
     <!-- Modals -->
     <div id="modal-overlay" class="modal-overlay"></div>
 
+    <!-- Bulk Student Modal -->
+    <div id="modal-bulk" class="modal glass-modal">
+        <div class="modal-header">
+            <h3 id="modal-bulk-title">Cadastro em Massa</h3>
+            <button class="icon-btn close-modal"><i class="fas fa-times"></i></button>
+        </div>
+        <form id="form-bulk" class="modal-body">
+            <p class="text-secondary" style="font-size: 0.85rem; margin-bottom: 0.5rem;">Cole a lista com os nomes dos
+                alunos (um aluno por linha).</p>
+            <div class="input-group">
+                <label>Turma (Opcional - aplicada para todos)</label>
+                <input type="text" id="bulk-class" placeholder="Ex: 3º Ano B">
+            </div>
+            <div class="input-group">
+                <textarea id="bulk-names" rows="6" required placeholder="Maria Silva&#10;João Marcos&#10;Pedro Alves..."
+                    style="background: var(--bg-base); border: 1px solid var(--glass-border); padding: 0.8rem; border-radius: var(--radius-md); color: var(--text-primary); font-family: inherit; width: 100%; outline: none;"></textarea>
+            </div>
+            <button type="submit" class="btn-primary ripple w-100 mt-2">Cadastrar Todos</button>
+        </form>
+    </div>
+
     <!-- Student Modal -->
     <div id="modal-student" class="modal glass-modal">
         <div class="modal-header">
@@ -248,27 +278,41 @@
             <input type="hidden" id="task-id">
             <div class="input-group">
                 <label for="task-name">Descrição da Tarefa</label>
-                <input type="text" id="task-name" required placeholder="Ex: Exercício de Física pág 30">
+                <input type="text" id="task-name" list="task-suggestions" required
+                    placeholder="Ex: Exercício de Física pág 30">
+                <datalist id="task-suggestions">
+                    <option value="Copiou o conteúdo do quadro"></option>
+                    <option value="Respondeu as atividades"></option>
+                    <option value="Participou de projeto pedagógico"></option>
+                </datalist>
+                <div class="quick-chips mt-2" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <span class="chip"
+                        onclick="document.getElementById('task-name').value='Copiou o conteúdo do quadro'"
+                        style="background: var(--pending-bg); color: var(--pending); padding: 0.25rem 0.75rem; border-radius: 16px; font-size: 0.8rem; cursor: pointer;">Copiou
+                        o quadro</span>
+                    <span class="chip" onclick="document.getElementById('task-name').value='Respondeu as atividades'"
+                        style="background: var(--pending-bg); color: var(--pending); padding: 0.25rem 0.75rem; border-radius: 16px; font-size: 0.8rem; cursor: pointer;">Respondeu
+                        atividades</span>
+                    <span class="chip"
+                        onclick="document.getElementById('task-name').value='Participou de projeto pedagógico'"
+                        style="background: var(--pending-bg); color: var(--pending); padding: 0.25rem 0.75rem; border-radius: 16px; font-size: 0.8rem; cursor: pointer;">Projeto
+                        Pedagógico</span>
+                </div>
             </div>
             <div class="input-group">
                 <label for="task-date">Data do Visto</label>
                 <input type="date" id="task-date" required>
             </div>
             <div class="input-group">
-                <label>Status</label>
-                <div class="segmented-control">
-                    <input type="radio" id="status-pending" name="task-status" value="pendente" checked>
-                    <label for="status-pending" class="segment ripple">⏳ Pendente</label>
-
-                    <input type="radio" id="status-done" name="task-status" value="concluido">
-                    <label for="status-done" class="segment ripple">✅ Visto</label>
-                </div>
-            </div>
-            <div class="input-group">
                 <label for="task-grade">Nota / Conceito (Opcional)</label>
                 <input type="text" id="task-grade" placeholder="Ex: 10, A, MB">
             </div>
-            <button type="submit" class="btn-primary ripple w-100 mt-2">Salvar Tarefa</button>
+            <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                <button type="submit" class="btn-primary ripple w-100">Salvar Tarefa</button>
+                <button type="button" id="btn-delete-task-modal"
+                    class="btn-primary ripple w-100 bg-danger text-white border-none"
+                    style="display: none;">Excluir</button>
+            </div>
         </form>
     </div>
 

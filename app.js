@@ -54,6 +54,18 @@ const DB = {
 
 // --- STATE & UTILS ---
 let currentStudentId = null;
+let currentMonth = new Date().toISOString().slice(0, 7); // Default to current YYYY-MM
+document.getElementById("global-month-filter").value = currentMonth;
+document.getElementById("global-month-filter").addEventListener("change", (e) => {
+    currentMonth = e.target.value;
+    renderStudents();
+    if (document.getElementById("view-student-details").classList.contains("active")) {
+        renderTasks();
+    }
+    if (document.getElementById("view-reports").classList.contains("active")) {
+        renderReports();
+    }
+});
 
 const showToast = (msg, type = "success") => {
     const toast = document.getElementById("toast");
@@ -78,7 +90,10 @@ const calcGradeValue = (val) => {
 };
 
 const getStudentMetrics = (studentId) => {
-    const tasks = DB.getStudentTasks(studentId);
+    let tasks = DB.getStudentTasks(studentId);
+    if (currentMonth) {
+        tasks = tasks.filter(t => t.date.startsWith(currentMonth));
+    }
     let completed = 0;
     let sum = 0;
     let countGrades = 0;
@@ -219,14 +234,18 @@ const renderStudents = () => {
         const el = document.createElement('div');
         el.className = "card glass";
         el.innerHTML = `
-            <div onclick="openStudentDetails('${s.id}')" style="flex: 1;">
-                <div class="card-top">
-                    <div class="card-title">${s.name}</div>
-                    <div class="card-badges">
-                        <span class="badge badge-count">${s._metrics.completed} Vistos</span>
+            <div onclick="openStudentDetails('${s.id}')" style="flex: 1; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div class="card-top">
+                        <div class="card-title">${s.name}</div>
                     </div>
+                    <div class="subtitle mt-2">${s.class || 'Sem Turma'} &bull; Média: ${s._metrics.avg}</div>
                 </div>
-                <div class="subtitle mt-2">${s.class || 'Sem Turma'} &bull; Média: ${s._metrics.avg}</div>
+                <div>
+                    <button class="btn-primary ripple" style="border-radius: 20px; padding: 0.5rem 1rem; font-size: 0.95rem; display: flex; align-items: center; gap: 0.4rem;" onclick="openStudentDetails('${s.id}')">
+                        <i class="fas fa-check-circle"></i> ${s._metrics.completed}
+                    </button>
+                </div>
             </div>
             <div style="display: flex; gap: 1rem; border-top: 1px solid var(--glass-border); padding-top: 0.75rem; margin-top: 0.5rem; justify-content: flex-end;">
                 <button class="icon-btn" onclick="editStudentAction(event, '${s.id}')" style="width: auto; height: auto; font-size: 1rem; color: var(--text-primary);"><i class="fas fa-edit"></i> Editar</button>
@@ -257,10 +276,12 @@ const renderTasks = () => {
     const m = getStudentMetrics(currentStudentId);
 
     document.getElementById("detail-stat-completed").innerText = m.completed;
-    document.getElementById("detail-stat-pending").innerText = m.pending;
     document.getElementById("detail-stat-avg").innerText = m.avg;
 
     let tasks = DB.getStudentTasks(currentStudentId);
+    if (currentMonth) {
+        tasks = tasks.filter(t => t.date.startsWith(currentMonth));
+    }
     const sort = document.getElementById("sort-tasks").value;
 
     if (sort === "date-desc") tasks.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -293,11 +314,14 @@ const renderTasks = () => {
         list.appendChild(wrap);
 
         // Setup touch swipe
+        // Setup touch swipe only if NOT done
         const content = wrap.querySelector('.swipe-content');
-        setupSwipe(content,
-            () => deleteTaskAction(t.id),
-            () => toggleTaskAction(t.id)
-        );
+        if (!isDone) {
+            setupSwipe(content,
+                () => deleteTaskAction(t.id),
+                () => toggleTaskAction(t.id)
+            );
+        }
     });
 };
 document.getElementById("sort-tasks").addEventListener('change', renderTasks);
@@ -347,18 +371,20 @@ window.editTaskAction = (id) => {
         document.getElementById("task-id").value = t.id;
         document.getElementById("task-name").value = t.name;
         document.getElementById("task-date").value = t.date;
-        document.getElementById("task-grade").value = t.grade;
-        if (t.status === 'concluido') document.getElementById("status-done").checked = true;
-        else document.getElementById("status-pending").checked = true;
+        document.getElementById("task-grade").value = t.grade || '';
 
         document.getElementById("modal-task-title").innerText = "Editar Tarefa";
+        document.getElementById("btn-delete-task-modal").style.display = "block";
         openModal("modal-task");
     }
 };
 
 const renderReports = () => {
     const students = DB.getStudents();
-    const tasks = DB.getTasks();
+    let tasks = DB.getTasks();
+    if (currentMonth) {
+        tasks = tasks.filter(t => t.date.startsWith(currentMonth));
+    }
 
     document.getElementById("report-total-alunos").innerText = students.length;
     document.getElementById("report-total-vistos").innerText = tasks.filter(t => t.status === 'concluido').length;
@@ -399,11 +425,38 @@ const closeModal = () => {
 document.querySelectorAll(".close-modal").forEach(b => b.addEventListener('click', closeModal));
 document.getElementById("modal-overlay").addEventListener('click', closeModal);
 
+document.getElementById("btn-bulk-students").addEventListener('click', () => {
+    document.getElementById("form-bulk").reset();
+    openModal("modal-bulk");
+});
+
 document.getElementById("btn-add-student").addEventListener('click', () => {
     document.getElementById("form-student").reset();
     document.getElementById("student-id").value = "";
     document.getElementById("modal-student-title").innerText = "Novo Aluno";
     openModal("modal-student");
+});
+
+document.getElementById("form-bulk").addEventListener('submit', (e) => {
+    e.preventDefault();
+    const txt = document.getElementById("bulk-names").value;
+    const turma = document.getElementById("bulk-class").value;
+    const lines = txt.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+    let students = DB.getStudents();
+    lines.forEach(name => {
+        students.push({
+            id: Date.now().toString() + Math.random().toString(36).substring(2, 5),
+            name: name,
+            class: turma,
+            createdAt: new Date().toISOString()
+        });
+    });
+    DB.saveStudents(students);
+    closeModal();
+    showToast(`${lines.length} alunos cadastrados em massa!`);
+    renderStudents();
+    navigateTo('view-students');
 });
 
 document.getElementById("btn-edit-student").addEventListener('click', () => {
@@ -430,7 +483,18 @@ document.getElementById("btn-add-task").addEventListener('click', () => {
     document.getElementById("task-id").value = "";
     document.getElementById("task-date").value = new Date().toISOString().split('T')[0];
     document.getElementById("modal-task-title").innerText = "Nova Tarefa";
+    document.getElementById("btn-delete-task-modal").style.display = "none";
     openModal("modal-task");
+});
+
+document.getElementById("btn-delete-task-modal").addEventListener('click', () => {
+    const id = document.getElementById("task-id").value;
+    if (id && confirm("Deseja realmente excluir esta tarefa/visto?")) {
+        DB.deleteTask(id);
+        renderTasks();
+        closeModal();
+        showToast("Tarefa excluída");
+    }
 });
 
 document.getElementById("form-student").addEventListener('submit', (e) => {
@@ -459,7 +523,7 @@ document.getElementById("form-task").addEventListener('submit', (e) => {
         studentId: currentStudentId,
         name: document.getElementById("task-name").value,
         date: document.getElementById("task-date").value,
-        status: document.querySelector('input[name="task-status"]:checked').value,
+        status: 'concluido',
         grade: document.getElementById("task-grade").value,
         createdAt: new Date().toISOString()
     };
@@ -491,9 +555,9 @@ document.getElementById("btn-export-csv").addEventListener('click', () => {
     const students = DB.getStudents();
     students.forEach(s => s._m = getStudentMetrics(s.id));
 
-    let csv = "ID,Nome,Turma,Vistos,Pendentes,Media\n";
+    let csv = "ID,Nome,Turma,Vistos,Media\n";
     students.forEach(s => {
-        csv += `"${s.id}","${s.name}","${s.class || ''}",${s._m.completed},${s._m.pending},${s._m.avg}\n`;
+        csv += `"${s.id}","${s.name}","${s.class || ''}",${s._m.completed},${s._m.avg}\n`;
     });
 
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
