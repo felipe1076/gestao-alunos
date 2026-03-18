@@ -253,9 +253,9 @@ const renderStudents = () => {
                     </button>
                 </div>
             </div>
-            <div style="display: flex; gap: 1rem; border-top: 1px solid var(--glass-border); padding-top: 0.75rem; margin-top: 0.5rem; justify-content: flex-end;">
-                <button class="icon-btn" onclick="editStudentAction(event, '${s.id}')" style="width: auto; height: auto; font-size: 1rem; color: var(--text-primary);"><i class="fas fa-edit"></i> Editar</button>
-                <button class="icon-btn" onclick="deleteStudentAction(event, '${s.id}')" style="width: auto; height: auto; font-size: 1rem; color: var(--danger);"><i class="fas fa-trash"></i> Excluir</button>
+            <div style="display: flex; gap: 0.5rem; border-top: 1px solid var(--glass-border); padding-top: 0.5rem; margin-top: 0.25rem; justify-content: flex-end;">
+                <button class="icon-btn" onclick="editStudentAction(event, '${s.id}')" aria-label="Editar"><i class="fas fa-edit"></i></button>
+                <button class="icon-btn" onclick="deleteStudentAction(event, '${s.id}')" aria-label="Excluir"><i class="fas fa-trash text-danger"></i></button>
             </div>
         `;
         list.appendChild(el);
@@ -557,23 +557,6 @@ document.getElementById("btn-export-json").addEventListener('click', () => {
     const a = document.createElement("a");
     a.href = url;
     a.download = `backup_escola_${Date.now()}.json`;
-    a.click();
-});
-
-document.getElementById("btn-export-csv").addEventListener('click', () => {
-    const students = DB.getStudents();
-    students.forEach(s => s._m = getStudentMetrics(s.id));
-
-    let csv = "ID,Nome,Turma,Vistos,Soma Notas\n";
-    students.forEach(s => {
-        csv += `"${s.id}","${s.name}","${s.class || ''}",${s._m.completed},${s._m.avg}\n`;
-    });
-
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `relatorio_alunos_${Date.now()}.csv`;
     a.click();
 });
 
