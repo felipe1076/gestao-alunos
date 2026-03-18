@@ -141,9 +141,14 @@ document.querySelectorAll("[data-set-theme]").forEach(btn => {
 });
 
 // Navigation
-const navigateTo = (viewId) => {
-    document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
-    document.getElementById(viewId).classList.add("active");
+const navigateTo = (viewId, push = true) => {
+    const views = document.querySelectorAll(".view");
+    const targetView = document.getElementById(viewId);
+    
+    if (!targetView) return;
+
+    views.forEach(v => v.classList.remove("active"));
+    targetView.classList.add("active");
 
     document.querySelectorAll(".nav-item").forEach(n => {
         n.classList.remove("active");
@@ -152,6 +157,11 @@ const navigateTo = (viewId) => {
 
     if (viewId === 'view-students') renderStudents();
     if (viewId === 'view-reports') renderReports();
+
+    // Push history state if requested
+    if (push && (!history.state || history.state.view !== viewId)) {
+        history.pushState({ view: viewId }, '');
+    }
 };
 
 document.querySelectorAll(".nav-item, .back-btn").forEach(btn => {
@@ -417,15 +427,47 @@ const renderReports = () => {
 
 // --- MODALS ---
 const openModal = (id) => {
-    document.getElementById(id).classList.add("active");
+    const modal = document.getElementById(id);
+    if (!modal) return;
+    
+    modal.classList.add("active");
     document.getElementById("modal-overlay").classList.add("active");
+    
+    // Push a state for the modal
+    history.pushState({ modal: id }, '');
 };
-const closeModal = () => {
-    document.querySelectorAll(".modal").forEach(m => m.classList.remove("active"));
+
+const closeModal = (fromPopState = false) => {
+    const activeModals = document.querySelectorAll(".modal.active");
+    if (activeModals.length === 0) return;
+
+    activeModals.forEach(m => m.classList.remove("active"));
     document.getElementById("modal-overlay").classList.remove("active");
+
+    // If closed manually (not via back button), we need to go back in history
+    if (!fromPopState && history.state && history.state.modal) {
+        history.back();
+    }
 };
-document.querySelectorAll(".close-modal").forEach(b => b.addEventListener('click', closeModal));
-document.getElementById("modal-overlay").addEventListener('click', closeModal);
+
+// Handle Back Button
+window.addEventListener('popstate', (event) => {
+    const activeModal = document.querySelector(".modal.active");
+    
+    if (activeModal) {
+        // Just close the modal, don't trigger history.back() again
+        closeModal(true);
+    } else if (event.state && event.state.view) {
+        // Navigate to the state's view without pushing new history
+        navigateTo(event.state.view, false);
+    } else {
+        // Default fallback
+        navigateTo('view-students', false);
+    }
+});
+
+document.querySelectorAll(".close-modal").forEach(b => b.addEventListener('click', () => closeModal()));
+document.getElementById("modal-overlay").addEventListener('click', () => closeModal());
 
 document.getElementById("btn-bulk-students").addEventListener('click', () => {
     document.getElementById("form-bulk").reset();
@@ -669,3 +711,8 @@ if (formAddClass) {
 initTheme();
 renderClassesConfig();
 renderStudents();
+
+// Initialize history state
+if (!history.state) {
+    history.replaceState({ view: 'view-students' }, '');
+}
