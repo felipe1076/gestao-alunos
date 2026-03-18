@@ -107,7 +107,7 @@ const getStudentMetrics = (studentId) => {
         }
     });
 
-    const avg = countGrades > 0 ? (sum / countGrades).toFixed(1) : '-';
+    const avg = countGrades > 0 ? sum.toFixed(1) : '-';
     return {
         total: tasks.length,
         completed,
@@ -239,7 +239,7 @@ const renderStudents = () => {
                     <div class="card-top">
                         <div class="card-title">${s.name}</div>
                     </div>
-                    <div class="subtitle mt-2">${s.class || 'Sem Turma'} &bull; Média: ${s._metrics.avg}</div>
+                    <div class="subtitle mt-2">${s.class || 'Sem Turma'} &bull; Soma: ${s._metrics.avg}</div>
                 </div>
                 <div>
                     <button class="btn-primary ripple" style="border-radius: 20px; padding: 0.5rem 1rem; font-size: 0.95rem; display: flex; align-items: center; gap: 0.4rem;" onclick="openStudentDetails('${s.id}')">
@@ -394,7 +394,7 @@ const renderReports = () => {
         let v = calcGradeValue(t.grade);
         if (v !== null) { sum += v; count++; }
     });
-    document.getElementById("report-geral-media").innerText = count ? (sum / count).toFixed(1) : '-';
+    document.getElementById("report-geral-media").innerText = count ? sum.toFixed(1) : '-';
 
     students.forEach(s => s._m = getStudentMetrics(s.id));
     let top = students.sort((a, b) => b._m.completed - a._m.completed).slice(0, 5);
@@ -429,6 +429,8 @@ document.getElementById("btn-bulk-students").addEventListener('click', () => {
     document.getElementById("form-bulk").reset();
     openModal("modal-bulk");
 });
+
+
 
 document.getElementById("btn-add-student").addEventListener('click', () => {
     document.getElementById("form-student").reset();
@@ -555,7 +557,7 @@ document.getElementById("btn-export-csv").addEventListener('click', () => {
     const students = DB.getStudents();
     students.forEach(s => s._m = getStudentMetrics(s.id));
 
-    let csv = "ID,Nome,Turma,Vistos,Media\n";
+    let csv = "ID,Nome,Turma,Vistos,Soma Notas\n";
     students.forEach(s => {
         csv += `"${s.id}","${s.name}","${s.class || ''}",${s._m.completed},${s._m.avg}\n`;
     });
