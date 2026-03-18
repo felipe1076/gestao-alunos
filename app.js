@@ -6,7 +6,7 @@ const DB = {
     saveStudents: (data) => localStorage.setItem('escola_alunos', JSON.stringify(data)),
     getTasks: () => JSON.parse(localStorage.getItem('escola_tarefas') || '[]'),
     saveTasks: (data) => localStorage.setItem('escola_tarefas', JSON.stringify(data)),
-    
+
     addStudent: (student) => {
         const students = DB.getStudents();
         students.push(student);
@@ -25,7 +25,7 @@ const DB = {
         let tasks = DB.getTasks().filter(t => t.studentId !== id);
         DB.saveTasks(tasks);
     },
-    
+
     addTask: (task) => {
         const tasks = DB.getTasks();
         tasks.push(task);
@@ -41,11 +41,11 @@ const DB = {
         tasks = tasks.filter(t => t.id !== id);
         DB.saveTasks(tasks);
     },
-    
+
     getStudentTasks: (studentId) => {
         return DB.getTasks().filter(t => t.studentId === studentId);
     },
-    
+
     clearAll: () => {
         localStorage.removeItem('escola_alunos');
         localStorage.removeItem('escola_tarefas');
@@ -82,7 +82,7 @@ const getStudentMetrics = (studentId) => {
     let completed = 0;
     let sum = 0;
     let countGrades = 0;
-    
+
     tasks.forEach(t => {
         if (t.status === 'concluido') completed++;
         const val = calcGradeValue(t.grade);
@@ -91,13 +91,13 @@ const getStudentMetrics = (studentId) => {
             countGrades++;
         }
     });
-    
+
     const avg = countGrades > 0 ? (sum / countGrades).toFixed(1) : '-';
-    return { 
-        total: tasks.length, 
-        completed, 
-        pending: tasks.length - completed, 
-        avg 
+    return {
+        total: tasks.length,
+        completed,
+        pending: tasks.length - completed,
+        avg
     };
 };
 
@@ -107,7 +107,7 @@ const getStudentMetrics = (studentId) => {
 const initTheme = () => {
     const theme = localStorage.getItem("escola_theme") || "light";
     document.documentElement.setAttribute("data-theme", theme);
-    document.getElementById("theme-toggle").innerHTML = theme === "dark" 
+    document.getElementById("theme-toggle").innerHTML = theme === "dark"
         ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
 };
 document.getElementById("theme-toggle").addEventListener('click', () => {
@@ -115,7 +115,7 @@ document.getElementById("theme-toggle").addEventListener('click', () => {
     theme = theme === "dark" ? "light" : "dark";
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem("escola_theme", theme);
-    document.getElementById("theme-toggle").innerHTML = theme === "dark" 
+    document.getElementById("theme-toggle").innerHTML = theme === "dark"
         ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
 });
 
@@ -123,14 +123,14 @@ document.getElementById("theme-toggle").addEventListener('click', () => {
 const navigateTo = (viewId) => {
     document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
     document.getElementById(viewId).classList.add("active");
-    
+
     document.querySelectorAll(".nav-item").forEach(n => {
         n.classList.remove("active");
-        if(n.dataset.target === viewId) n.classList.add("active");
+        if (n.dataset.target === viewId) n.classList.add("active");
     });
-    
-    if(viewId === 'view-students') renderStudents();
-    if(viewId === 'view-reports') renderReports();
+
+    if (viewId === 'view-students') renderStudents();
+    if (viewId === 'view-reports') renderReports();
 };
 
 document.querySelectorAll(".nav-item, .back-btn").forEach(btn => {
@@ -143,29 +143,29 @@ document.querySelectorAll(".nav-item, .back-btn").forEach(btn => {
 // Swiping Action Engine Setup
 const setupSwipe = (element, onSwipeLeft, onSwipeRight) => {
     let startX = 0, currentX = 0, isSwiping = false, opened = false;
-    
+
     element.addEventListener('touchstart', e => {
         startX = e.touches[0].clientX;
         isSwiping = true;
         element.style.transition = 'none';
         element.style.cursor = 'grabbing';
-    }, {passive: true});
+    }, { passive: true });
 
     element.addEventListener('touchmove', e => {
         if (!isSwiping) return;
         currentX = e.touches[0].clientX;
         let diff = currentX - startX;
-        
+
         // Disable swipe if no callback
         if (diff > 0 && !onSwipeRight) diff = 0;
         if (diff < 0 && !onSwipeLeft) diff = 0;
-        
+
         // Limit pan
-        if (diff > 100) diff = 100 + (diff - 100)*0.2;
-        if (diff < -100) diff = -100 + (diff + 100)*0.2;
-        
+        if (diff > 100) diff = 100 + (diff - 100) * 0.2;
+        if (diff < -100) diff = -100 + (diff + 100) * 0.2;
+
         element.style.transform = `translateX(${diff}px)`;
-    }, {passive:true});
+    }, { passive: true });
 
     const resetSwipe = () => {
         isSwiping = false;
@@ -180,7 +180,7 @@ const setupSwipe = (element, onSwipeLeft, onSwipeRight) => {
             if (diff > 0 && onSwipeRight) {
                 element.style.transform = `translateX(120%)`; // Slide out visually check
                 setTimeout(() => onSwipeRight(), 200);
-            } 
+            }
             else if (diff < 0 && onSwipeLeft) {
                 element.style.transform = `translateX(-120%)`;
                 setTimeout(() => onSwipeLeft(), 200);
@@ -208,9 +208,9 @@ const renderStudents = () => {
 
     students.forEach(s => s._metrics = getStudentMetrics(s.id));
 
-    if (sort === "name-asc") students.sort((a,b) => a.name.localeCompare(b.name));
-    if (sort === "name-desc") students.sort((a,b) => b.name.localeCompare(a.name));
-    if (sort === "tasks-desc") students.sort((a,b) => b._metrics.completed - a._metrics.completed);
+    if (sort === "name-asc") students.sort((a, b) => a.name.localeCompare(b.name));
+    if (sort === "name-desc") students.sort((a, b) => b.name.localeCompare(a.name));
+    if (sort === "tasks-desc") students.sort((a, b) => b._metrics.completed - a._metrics.completed);
 
     list.innerHTML = "";
     if (students.length === 0) list.innerHTML = `<p class="text-secondary ms-2">Nenhum aluno encontrado.</p>`;
@@ -219,15 +219,20 @@ const renderStudents = () => {
         const el = document.createElement('div');
         el.className = "card glass";
         el.innerHTML = `
-            <div class="card-top">
-                <div class="card-title">${s.name}</div>
-                <div class="card-badges">
-                    <span class="badge badge-count">${s._metrics.completed} Vistos</span>
+            <div onclick="openStudentDetails('${s.id}')" style="flex: 1;">
+                <div class="card-top">
+                    <div class="card-title">${s.name}</div>
+                    <div class="card-badges">
+                        <span class="badge badge-count">${s._metrics.completed} Vistos</span>
+                    </div>
                 </div>
+                <div class="subtitle mt-2">${s.class || 'Sem Turma'} &bull; Média: ${s._metrics.avg}</div>
             </div>
-            <div class="subtitle mt-2">${s.class || 'Sem Turma'} &bull; Média: ${s._metrics.avg}</div>
+            <div style="display: flex; gap: 1rem; border-top: 1px solid var(--glass-border); padding-top: 0.75rem; margin-top: 0.5rem; justify-content: flex-end;">
+                <button class="icon-btn" onclick="editStudentAction(event, '${s.id}')" style="width: auto; height: auto; font-size: 1rem; color: var(--text-primary);"><i class="fas fa-edit"></i> Editar</button>
+                <button class="icon-btn" onclick="deleteStudentAction(event, '${s.id}')" style="width: auto; height: auto; font-size: 1rem; color: var(--danger);"><i class="fas fa-trash"></i> Excluir</button>
+            </div>
         `;
-        el.addEventListener('click', () => openStudentDetails(s.id));
         list.appendChild(el);
     });
 };
@@ -242,7 +247,7 @@ const openStudentDetails = (id) => {
 
     document.getElementById("detail-student-name").innerText = st.name;
     document.getElementById("detail-student-class").innerText = st.class || 'Nenhuma turma';
-    
+
     renderTasks();
     navigateTo('view-student-details');
 };
@@ -250,17 +255,17 @@ const openStudentDetails = (id) => {
 const renderTasks = () => {
     const list = document.getElementById("task-list");
     const m = getStudentMetrics(currentStudentId);
-    
+
     document.getElementById("detail-stat-completed").innerText = m.completed;
     document.getElementById("detail-stat-pending").innerText = m.pending;
     document.getElementById("detail-stat-avg").innerText = m.avg;
 
     let tasks = DB.getStudentTasks(currentStudentId);
     const sort = document.getElementById("sort-tasks").value;
-    
-    if (sort === "date-desc") tasks.sort((a,b) => new Date(b.date) - new Date(a.date));
-    if (sort === "date-asc") tasks.sort((a,b) => new Date(a.date) - new Date(b.date));
-    if (sort === "status") tasks.sort((a,b) => a.status.localeCompare(b.status));
+
+    if (sort === "date-desc") tasks.sort((a, b) => new Date(b.date) - new Date(a.date));
+    if (sort === "date-asc") tasks.sort((a, b) => new Date(a.date) - new Date(b.date));
+    if (sort === "status") tasks.sort((a, b) => a.status.localeCompare(b.status));
 
     list.innerHTML = "";
     if (tasks.length === 0) list.innerHTML = `<p class="text-secondary ms-2 pb-extended">Nenhuma tarefa. Clique em + para adicionar.</p>`;
@@ -268,7 +273,7 @@ const renderTasks = () => {
     tasks.forEach(t => {
         const wrap = document.createElement('div');
         wrap.className = "swipe-container";
-        
+
         let actionsHtml = `<div class="swipe-actions">
             <div class="action-left" onclick="deleteTaskAction('${t.id}')"><i class="fas fa-trash"></i></div>
             <div class="action-right" onclick="toggleTaskAction('${t.id}')"><i class="fas fa-check"></i></div>
@@ -280,7 +285,7 @@ const renderTasks = () => {
                 <div class="card-title">${t.name}</div>
                 <div class="task-meta mt-2">
                     <span class="task-status ${t.status}">${isDone ? '✅ Visto' : '⏳ Pendente'}</span>
-                    <span>${new Date(t.date).toLocaleDateString('pt-BR')}</span>
+                    <span>Data do Visto: ${new Date(t.date).toLocaleDateString('pt-BR')}</span>
                     ${t.grade ? `<span class="task-grade">Nota: ${t.grade}</span>` : ''}
                 </div>
             </div>
@@ -289,13 +294,39 @@ const renderTasks = () => {
 
         // Setup touch swipe
         const content = wrap.querySelector('.swipe-content');
-        setupSwipe(content, 
-            () => deleteTaskAction(t.id), 
+        setupSwipe(content,
+            () => deleteTaskAction(t.id),
             () => toggleTaskAction(t.id)
         );
     });
 };
 document.getElementById("sort-tasks").addEventListener('change', renderTasks);
+
+window.editStudentAction = (e, id) => {
+    if (e) e.stopPropagation();
+    currentStudentId = id;
+    const st = DB.getStudents().find(s => s.id === id);
+    if (st) {
+        document.getElementById("student-id").value = st.id;
+        document.getElementById("student-name").value = st.name;
+        document.getElementById("student-class").value = st.class;
+        document.getElementById("modal-student-title").innerText = "Editar Aluno";
+        openModal("modal-student");
+    }
+};
+
+window.deleteStudentAction = (e, id) => {
+    if (e) e.stopPropagation();
+    if (confirm("Tem certeza que deseja apagar este aluno e TODAS as suas tarefas permanentemente?")) {
+        DB.deleteStudent(id);
+        if (currentStudentId === id) {
+            navigateTo('view-students');
+        } else {
+            renderStudents();
+        }
+        showToast("Aluno excluído com sucesso!");
+    }
+};
 
 window.deleteTaskAction = (id) => {
     DB.deleteTask(id);
@@ -304,7 +335,7 @@ window.deleteTaskAction = (id) => {
 };
 window.toggleTaskAction = (id) => {
     let t = DB.getTasks().find(x => x.id === id);
-    if(t) {
+    if (t) {
         t.status = t.status === 'pendente' ? 'concluido' : 'pendente';
         DB.updateTask(t);
         renderTasks();
@@ -312,14 +343,14 @@ window.toggleTaskAction = (id) => {
 };
 window.editTaskAction = (id) => {
     let t = DB.getTasks().find(x => x.id === id);
-    if(t) {
+    if (t) {
         document.getElementById("task-id").value = t.id;
         document.getElementById("task-name").value = t.name;
         document.getElementById("task-date").value = t.date;
         document.getElementById("task-grade").value = t.grade;
-        if(t.status === 'concluido') document.getElementById("status-done").checked = true;
+        if (t.status === 'concluido') document.getElementById("status-done").checked = true;
         else document.getElementById("status-pending").checked = true;
-        
+
         document.getElementById("modal-task-title").innerText = "Editar Tarefa";
         openModal("modal-task");
     }
@@ -328,27 +359,27 @@ window.editTaskAction = (id) => {
 const renderReports = () => {
     const students = DB.getStudents();
     const tasks = DB.getTasks();
-    
+
     document.getElementById("report-total-alunos").innerText = students.length;
-    document.getElementById("report-total-vistos").innerText = tasks.filter(t => t.status==='concluido').length;
-    
+    document.getElementById("report-total-vistos").innerText = tasks.filter(t => t.status === 'concluido').length;
+
     let sum = 0, count = 0;
-    tasks.forEach(t => { 
+    tasks.forEach(t => {
         let v = calcGradeValue(t.grade);
-        if(v !== null) { sum+=v; count++; }
+        if (v !== null) { sum += v; count++; }
     });
-    document.getElementById("report-geral-media").innerText = count ? (sum/count).toFixed(1) : '-';
+    document.getElementById("report-geral-media").innerText = count ? (sum / count).toFixed(1) : '-';
 
     students.forEach(s => s._m = getStudentMetrics(s.id));
-    let top = students.sort((a,b) => b._m.completed - a._m.completed).slice(0, 5);
-    
+    let top = students.sort((a, b) => b._m.completed - a._m.completed).slice(0, 5);
+
     const list = document.getElementById("report-top-students");
     list.innerHTML = "";
     top.forEach((s, idx) => {
         list.innerHTML += `
             <div class="card glass mb-2">
                 <div class="card-top">
-                    <div><b>#${idx+1}</b> ${s.name}</div>
+                    <div><b>#${idx + 1}</b> ${s.name}</div>
                     <span class="badge bg-success text-success">${s._m.completed} Vistos</span>
                 </div>
             </div>
@@ -377,7 +408,7 @@ document.getElementById("btn-add-student").addEventListener('click', () => {
 
 document.getElementById("btn-edit-student").addEventListener('click', () => {
     const st = DB.getStudents().find(s => s.id === currentStudentId);
-    if(st) {
+    if (st) {
         document.getElementById("student-id").value = st.id;
         document.getElementById("student-name").value = st.name;
         document.getElementById("student-class").value = st.class;
@@ -387,7 +418,7 @@ document.getElementById("btn-edit-student").addEventListener('click', () => {
 });
 
 document.getElementById("btn-delete-student").addEventListener('click', () => {
-    if(confirm("Tem certeza que deseja apagar este aluno e todas as suas tarefas?")) {
+    if (confirm("Tem certeza que deseja apagar este aluno e todas as suas tarefas?")) {
         DB.deleteStudent(currentStudentId);
         showToast("Aluno excluído");
         navigateTo('view-students');
@@ -413,10 +444,10 @@ document.getElementById("form-student").addEventListener('submit', (e) => {
     };
     if (id) DB.updateStudent(obj);
     else DB.addStudent(obj);
-    
+
     closeModal();
     renderStudents();
-    if(id && currentStudentId === id) openStudentDetails(id);
+    if (id && currentStudentId === id) openStudentDetails(id);
     showToast("Aluno salvo!");
 });
 
@@ -434,7 +465,7 @@ document.getElementById("form-task").addEventListener('submit', (e) => {
     };
     if (id) DB.updateTask(obj);
     else DB.addTask(obj);
-    
+
     closeModal();
     renderTasks();
     showToast("Tarefa salva!");
@@ -448,7 +479,7 @@ document.getElementById("btn-export-json").addEventListener('click', () => {
         tarefas: DB.getTasks(),
         exportData: new Date().toISOString()
     };
-    const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -459,13 +490,13 @@ document.getElementById("btn-export-json").addEventListener('click', () => {
 document.getElementById("btn-export-csv").addEventListener('click', () => {
     const students = DB.getStudents();
     students.forEach(s => s._m = getStudentMetrics(s.id));
-    
+
     let csv = "ID,Nome,Turma,Vistos,Pendentes,Media\n";
     students.forEach(s => {
         csv += `"${s.id}","${s.name}","${s.class || ''}",${s._m.completed},${s._m.pending},${s._m.avg}\n`;
     });
-    
-    const blob = new Blob([csv], {type: "text/csv;charset=utf-8;"});
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -475,12 +506,12 @@ document.getElementById("btn-export-csv").addEventListener('click', () => {
 
 document.getElementById("import-json").addEventListener('change', (e) => {
     const file = e.target.files[0];
-    if(!file) return;
+    if (!file) return;
     const reader = new FileReader();
     reader.onload = (e) => {
         try {
             const data = JSON.parse(e.target.result);
-            if(data.alunos && data.tarefas) {
+            if (data.alunos && data.tarefas) {
                 DB.saveStudents(data.alunos);
                 DB.saveTasks(data.tarefas);
                 showToast("Dados recuperados com sucesso!");
@@ -488,7 +519,7 @@ document.getElementById("import-json").addEventListener('change', (e) => {
             } else {
                 showToast("Formato de arquivo inválido", "error");
             }
-        } catch(err) {
+        } catch (err) {
             showToast("Erro ao ler JSON", "error");
         }
     };
@@ -496,7 +527,7 @@ document.getElementById("import-json").addEventListener('change', (e) => {
 });
 
 document.getElementById("btn-clear-data").addEventListener('click', () => {
-    if(confirm("ATENÇÃO: Isso apagará TODOS os seus alunos e vistos permanentemente do dispositivo. Confirma?")) {
+    if (confirm("ATENÇÃO: Isso apagará TODOS os seus alunos e vistos permanentemente do dispositivo. Confirma?")) {
         DB.clearAll();
         renderStudents();
         showToast("Dados apagados!");

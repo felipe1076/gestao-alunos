@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR" data-theme="light">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -12,6 +13,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <div id="app">
         <!-- Header -->
@@ -24,14 +26,14 @@
 
         <!-- Main Content -->
         <main id="main-content">
-            
+
             <!-- View: Students -->
             <section id="view-students" class="view active">
                 <div class="search-container glass">
                     <i class="fas fa-search"></i>
                     <input type="text" id="search-student" placeholder="Buscar aluno...">
                 </div>
-                
+
                 <div class="controls-row">
                     <div class="select-wrapper">
                         <select id="sort-students">
@@ -43,13 +45,15 @@
                     </div>
                 </div>
 
+                <button id="btn-add-student" class="btn-primary ripple w-100 mb-4" aria-label="Adicionar Aluno">
+                    <i class="fas fa-plus"></i> Novo Aluno
+                </button>
+
                 <div id="student-list" class="list">
                     <!-- Cards -->
                 </div>
 
-                <button id="btn-add-student" class="fab ripple" aria-label="Adicionar Aluno">
-                    <i class="fas fa-plus"></i>
-                </button>
+
             </section>
 
             <!-- View: Student Details (Tasks) -->
@@ -96,17 +100,21 @@
                         <i class="fas fa-chevron-down"></i>
                     </div>
                 </div>
+
+                <button id="btn-add-task" class="btn-primary ripple w-100 mb-4" aria-label="Adicionar Tarefa">
+                    <i class="fas fa-plus"></i> Novo Visto / Tarefa
+                </button>
+
                 <div class="swipe-hint">
-                    <small><i class="fas fa-hand-point-right"></i> Deslize para a direita para dar Visto, e para a esquerda para Excluir.</small>
+                    <small><i class="fas fa-hand-point-right"></i> Deslize para a direita para dar Visto, e para a
+                        esquerda para Excluir.</small>
                 </div>
 
                 <div id="task-list" class="list pb-extended">
                     <!-- Tasks -->
                 </div>
 
-                <button id="btn-add-task" class="fab ripple" aria-label="Adicionar Tarefa">
-                    <i class="fas fa-plus"></i>
-                </button>
+
             </section>
 
             <!-- View: Reports -->
@@ -184,7 +192,8 @@
 
                 <div class="db-footer">
                     <i class="fas fa-shield-alt"></i>
-                    <p><b>Privacidade 100%:</b> Nenhum dado é enviado para a nuvem. O banco de dados (IndexedDB/LocalStorage) funciona totalmente offline em seu navegador.</p>
+                    <p><b>Privacidade 100%:</b> Nenhum dado é enviado para a nuvem. O banco de dados
+                        (IndexedDB/LocalStorage) funciona totalmente offline em seu navegador.</p>
                 </div>
             </section>
         </main>
@@ -242,7 +251,7 @@
                 <input type="text" id="task-name" required placeholder="Ex: Exercício de Física pág 30">
             </div>
             <div class="input-group">
-                <label for="task-date">Data</label>
+                <label for="task-date">Data do Visto</label>
                 <input type="date" id="task-date" required>
             </div>
             <div class="input-group">
@@ -250,7 +259,7 @@
                 <div class="segmented-control">
                     <input type="radio" id="status-pending" name="task-status" value="pendente" checked>
                     <label for="status-pending" class="segment ripple">⏳ Pendente</label>
-                    
+
                     <input type="radio" id="status-done" name="task-status" value="concluido">
                     <label for="status-done" class="segment ripple">✅ Visto</label>
                 </div>
@@ -268,4 +277,5 @@
 
     <script src="app.js"></script>
 </body>
+
 </html>
