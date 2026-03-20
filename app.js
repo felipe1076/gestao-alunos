@@ -1022,15 +1022,6 @@ window.deleteClassAction = (c) => {
 };
 
  
-window.deleteClassAction = (c) => {
-    if (confirm(`Excluir a turma "${c}" do cadastro? Os alunos NÃO serão apagados, mas a turma sumirá das opções.`)) {
-        let classes = DB.getClasses().filter(x => x !== c);
-        DB.saveClasses(classes);
-        renderClassesConfig();
-        renderStudents();
-    }
-};
-
 const formManageAddClass = document.getElementById("form-manage-add-class");
 if (formManageAddClass) {
     formManageAddClass.addEventListener('submit', (e) => {
@@ -1060,7 +1051,6 @@ if (formManageAddClass) {
                 DB.saveStudents(students);
             }
 
-            document.getElementById("new-class-name-manage").value = "";
             document.getElementById("new-class-name-manage").value = "";
             document.getElementById("new-class-students-manage").value = "";
             renderClassesConfig();

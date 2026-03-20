@@ -1,4 +1,4 @@
-const CACHE_NAME = 'escola-v1';
+const CACHE_NAME = 'escola-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -26,7 +26,19 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // Network-First Strategy: Tenta buscar da rede primeiro, se falhar (offline), usa o cache.
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request))
+    fetch(event.request)
+      .then((response) => {
+        // Se a busca na rede deu certo, atualiza o cache e retorna a resposta
+        return caches.open(CACHE_NAME).then((cache) => {
+          cache.put(event.request, response.clone());
+          return response;
+        });
+      })
+      .catch(() => {
+        // Se falhar (offline), tenta encontrar no cache
+        return caches.match(event.request);
+      })
   );
 });
