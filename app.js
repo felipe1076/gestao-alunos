@@ -58,17 +58,23 @@ const DB = {
 // --- STATE & UTILS ---
 let currentStudentId = null;
 let currentMonth = new Date().toISOString().slice(0, 7); // Default to current YYYY-MM
-document.getElementById("global-month-filter").value = currentMonth;
-document.getElementById("global-month-filter").addEventListener("change", (e) => {
-    currentMonth = e.target.value;
-    renderStudents();
-    if (document.getElementById("view-student-details").classList.contains("active")) {
-        renderTasks();
+
+const initMonthFilter = () => {
+    const monthFilter = document.getElementById("global-month-filter");
+    if (monthFilter) {
+        monthFilter.value = currentMonth;
+        monthFilter.addEventListener("change", (e) => {
+            currentMonth = e.target.value;
+            renderStudents();
+            if (document.getElementById("view-student-details").classList.contains("active")) {
+                renderTasks();
+            }
+            if (document.getElementById("view-reports").classList.contains("active")) {
+                renderReports();
+            }
+        });
     }
-    if (document.getElementById("view-reports").classList.contains("active")) {
-        renderReports();
-    }
-});
+};
 
 const showToast = (msg, type = "success") => {
     const toast = document.getElementById("toast");
@@ -128,18 +134,24 @@ const initTheme = () => {
 };
 
 const setTheme = (theme) => {
-    document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem("escola_theme", theme);
-    
-    // Update theme selector buttons
-    document.querySelectorAll(".theme-btn").forEach(btn => {
-        btn.classList.toggle("active-theme", btn.dataset.setTheme === theme);
-    });
+    try {
+        document.documentElement.setAttribute("data-theme", theme);
+        localStorage.setItem("escola_theme", theme);
+        
+        // Update theme selector buttons
+        document.querySelectorAll(".theme-btn").forEach(btn => {
+            btn.classList.toggle("active-theme", btn.dataset.setTheme === theme);
+        });
+    } catch(e) {
+        console.error('Erro ao definir tema:', e);
+    }
 };
 
-document.querySelectorAll("[data-set-theme]").forEach(btn => {
-    btn.addEventListener('click', () => setTheme(btn.dataset.setTheme));
-});
+const initThemeSelectors = () => {
+    document.querySelectorAll("[data-set-theme]").forEach(btn => {
+        btn.addEventListener('click', () => setTheme(btn.dataset.setTheme));
+    });
+};
 
 // ─── NAVIGATION STACK ───────────────────────────────────────────────
 // We manage our own stack so the OS back button never exits the app.
@@ -163,8 +175,12 @@ const navigateTo = (viewId) => {
         if (n.dataset.target === viewId) n.classList.add("active");
     });
 
-    if (viewId === 'view-students') renderStudents();
-    if (viewId === 'view-reports') renderReports();
+    if (viewId === 'view-students') {
+        try { renderStudents(); } catch(e) { console.error('Erro ao renderizar students:', e); }
+    }
+    if (viewId === 'view-reports') {
+        try { renderReports(); } catch(e) { console.error('Erro ao renderizar reports:', e); }
+    }
 
     // Track in our own stack
     navStack.push({ type: 'view', id: viewId });
@@ -173,12 +189,14 @@ const navigateTo = (viewId) => {
     _pushDummyState();
 };
 
-document.querySelectorAll(".nav-item, .back-btn").forEach(btn => {
-    btn.addEventListener('click', (e) => {
-        const viewId = e.currentTarget.dataset.target;
-        navigateTo(viewId);
+const initNavigation = () => {
+    document.querySelectorAll(".nav-item, .back-btn").forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const viewId = e.currentTarget.dataset.target;
+            navigateTo(viewId);
+        });
     });
-});
+};
 
 // Swiping Action Engine Setup
 const setupSwipe = (element, onSwipeLeft, onSwipeRight) => {
@@ -254,12 +272,22 @@ const getInitials = (name) => {
 
 // Renders
 const renderStudents = () => {
-    const list = document.getElementById("student-list");
-    let students = DB.getStudents();
-    const query = document.getElementById("search-student").value.toLowerCase();
-    const sort = document.getElementById("sort-students").value;
-    const clsFilter = document.getElementById("filter-students-class").value;
-    const actFilter = document.getElementById("filter-students-activity").value;
+    try {
+        const list = document.getElementById("student-list");
+        const searchElement = document.getElementById("search-student");
+        const sortElement = document.getElementById("sort-students");
+        const filterClassElement = document.getElementById("filter-students-class");
+        const filterActivityElement = document.getElementById("filter-students-activity");
+        
+        if (!list || !searchElement || !sortElement || !filterClassElement || !filterActivityElement) {
+            return; // Elementos de student não existem, skip
+        }
+
+        let students = DB.getStudents();
+        const query = searchElement.value.toLowerCase();
+        const sort = sortElement.value;
+        const clsFilter = filterClassElement.value;
+        const actFilter = filterActivityElement.value;
 
     if (query) {
         students = students.filter(s => s.name.toLowerCase().includes(query) || (s.class && s.class.toLowerCase().includes(query)));
@@ -333,86 +361,118 @@ const renderStudents = () => {
     list.appendChild(compactList);
 
     // Also update Top 10 from here
-    renderTop10();
+    try { renderTop10(); } catch(e) { console.error('Erro ao renderizar top10:', e); }
+    } catch(e) {
+        console.error('Erro ao renderizar students:', e);
+    }
 };
 
 const renderTop10 = () => {
-    const list = document.getElementById("top10-list");
-    const container = document.getElementById("top10-home");
-    const searchVal = document.getElementById("search-student").value;
-    const classFilter = document.getElementById("filter-students-class").value;
-    
-    // Only show Top 10 when not searching or filtering by class, to avoid clutter
-    if (searchVal || classFilter) {
-        container.style.display = "none";
-        return;
-    }
-
-    const students = DB.getStudents();
-    students.forEach(s => s._m = getStudentMetrics(s.id));
-    
-    // Sort by monthly completed tasks and take top 10
-    const top = students
-        .filter(s => s._m.completed > 0)
-        .sort((a, b) => b._m.completed - a._m.completed)
-        .slice(0, 10);
-
-    if (top.length === 0) {
-        container.style.display = "none";
-        return;
-    }
-
-    container.style.display = "block";
-    list.innerHTML = "";
-    
-    top.forEach((s, idx) => {
-        const row = document.createElement("div");
-        row.className = "top10-row";
-        const rankLabel = idx + 1;
+    try {
+        const list = document.getElementById("top10-list");
+        const container = document.getElementById("top10-home");
+        if (!list || !container) return;
         
-        row.innerHTML = `
-            <div class="top10-rank">${rankLabel}</div>
-            <div class="top10-info">
-                <div class="top10-name">
-                    ${s.name}, turma ${s.class || 'N/A'} - <strong>${s._m.completed} vistos</strong>
+        const searchElement = document.getElementById("search-student");
+        const filterClassElement = document.getElementById("filter-students-class");
+        if (!searchElement || !filterClassElement) return;
+        
+        const searchVal = searchElement.value;
+        const classFilter = filterClassElement.value;
+        
+        // Only show Top 10 when not searching or filtering by class, to avoid clutter
+        if (searchVal || classFilter) {
+            container.style.display = "none";
+            return;
+        }
+
+        const students = DB.getStudents();
+        students.forEach(s => s._m = getStudentMetrics(s.id));
+        
+        // Sort by monthly completed tasks and take top 10
+        const top = students
+            .filter(s => s._m.completed > 0)
+            .sort((a, b) => b._m.completed - a._m.completed)
+            .slice(0, 10);
+
+        if (top.length === 0) {
+            container.style.display = "none";
+            return;
+        }
+
+        container.style.display = "block";
+        list.innerHTML = "";
+        
+        top.forEach((s, idx) => {
+            const row = document.createElement("div");
+            row.className = "top10-row";
+            const rankLabel = idx + 1;
+            
+            row.innerHTML = `
+                <div class="top10-rank">${rankLabel}</div>
+                <div class="top10-info">
+                    <div class="top10-name">
+                        ${s.name}, turma ${s.class || 'N/A'} - <strong>${s._m.completed} vistos</strong>
+                    </div>
                 </div>
-            </div>
-        `;
-        row.addEventListener('click', () => openStudentDetails(s.id));
-        list.appendChild(row);
-    });
+            `;
+            row.addEventListener('click', () => openStudentDetails(s.id));
+            list.appendChild(row);
+        });
+    } catch(e) {
+        console.error('Erro em renderTop10:', e);
+    }
 };
 
-document.getElementById("search-student").addEventListener('input', renderStudents);
-document.getElementById("sort-students").addEventListener('change', renderStudents);
-document.getElementById("filter-students-class").addEventListener('change', renderStudents);
-document.getElementById("filter-students-activity").addEventListener('change', renderStudents);
-document.getElementById("filter-report-class").addEventListener('change', renderReports);
+const initStudentFilters = () => {
+    const searchElement = document.getElementById("search-student");
+    const sortElement = document.getElementById("sort-students");
+    const filterClassElement = document.getElementById("filter-students-class");
+    const filterActivityElement = document.getElementById("filter-students-activity");
+    const filterReportElement = document.getElementById("filter-report-class");
+    
+    if (searchElement) searchElement.addEventListener('input', renderStudents);
+    if (sortElement) sortElement.addEventListener('change', renderStudents);
+    if (filterClassElement) filterClassElement.addEventListener('change', renderStudents);
+    if (filterActivityElement) filterActivityElement.addEventListener('change', renderStudents);
+    if (filterReportElement) filterReportElement.addEventListener('change', renderReports);
+};
 
 const openStudentDetails = (id) => {
     currentStudentId = id;
     const st = DB.getStudents().find(s => s.id === id);
     if (!st) return;
 
-    document.getElementById("detail-student-name").innerText = st.name;
-    document.getElementById("detail-student-class").innerText = st.class || 'Nenhuma turma';
+    const detailStudentName = document.getElementById("detail-student-name");
+    const detailStudentClass = document.getElementById("detail-student-class");
+    
+    if (detailStudentName) detailStudentName.innerText = st.name;
+    if (detailStudentClass) detailStudentClass.innerText = st.class || 'Nenhuma turma';
 
-    renderTasks();
+    try { renderTasks(); } catch(e) { console.error('Erro ao renderizar tasks:', e); }
     navigateTo('view-student-details');
 };
 
 const renderTasks = () => {
     const list = document.getElementById("task-list");
+    const detailStatCompleted = document.getElementById("detail-stat-completed");
+    const detailStatAvg = document.getElementById("detail-stat-avg");
+    const sortTasksElement = document.getElementById("sort-tasks");
+    
+    if (!list || !detailStatCompleted || !detailStatAvg || !sortTasksElement) {
+        return; // Elementos de task não existem, skip
+    }
+
     const m = getStudentMetrics(currentStudentId);
 
-    document.getElementById("detail-stat-completed").innerText = m.completed;
-    document.getElementById("detail-stat-avg").innerText = m.avg;
+    detailStatCompleted.innerText = m.completed;
+    detailStatAvg.innerText = m.avg;
 
     let tasks = DB.getStudentTasks(currentStudentId);
     if (currentMonth) {
         tasks = tasks.filter(t => t.date.startsWith(currentMonth));
     }
-    const sort = document.getElementById("sort-tasks").value;
+    const sort = sortTasksElement.value;
 
     if (sort === "date-desc") tasks.sort((a, b) => new Date(b.date) - new Date(a.date));
     if (sort === "date-asc") tasks.sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -454,7 +514,11 @@ const renderTasks = () => {
         }
     });
 };
-document.getElementById("sort-tasks").addEventListener('change', renderTasks);
+
+const initTaskFilters = () => {
+    const sortTasksElement = document.getElementById("sort-tasks");
+    if (sortTasksElement) sortTasksElement.addEventListener('change', renderTasks);
+};
 
 window.editStudentAction = (e, id) => {
     if (e) e.stopPropagation();
@@ -502,56 +566,70 @@ window.editTaskAction = (id) => {
 };
 
 const renderReports = () => {
-    const students = DB.getStudents();
-    let tasks = DB.getTasks();
-    if (currentMonth) {
-        tasks = tasks.filter(t => t.date.startsWith(currentMonth));
-    }
+    try {
+        // Verificar se os elementos existem antes de tentar acessá-los
+        const reportTotalAlunos = document.getElementById("report-total-alunos");
+        const reportTotalVistos = document.getElementById("report-total-vistos");
+        const reportGeralMedia = document.getElementById("report-geral-media");
+        const reportTopStudents = document.getElementById("report-top-students");
+        const filterReportClass = document.getElementById("filter-report-class");
+        
+        if (!reportTotalAlunos || !reportTotalVistos || !reportGeralMedia || !reportTopStudents) {
+            return; // Elementos de report não existem, skip
+        }
 
-    document.getElementById("report-total-alunos").innerText = students.length;
-    document.getElementById("report-total-vistos").innerText = tasks.filter(t => t.status === 'concluido').length;
+        const students = DB.getStudents();
+        let tasks = DB.getTasks();
+        if (currentMonth) {
+            tasks = tasks.filter(t => t.date.startsWith(currentMonth));
+        }
 
-    let sum = 0, count = 0;
-    tasks.forEach(t => {
-        let v = calcGradeValue(t.grade);
-        if (v !== null) { sum += v; count++; }
-    });
-    document.getElementById("report-geral-media").innerText = count ? sum.toFixed(1) : '-';
+        reportTotalAlunos.innerText = students.length;
+        reportTotalVistos.innerText = tasks.filter(t => t.status === 'concluido').length;
 
-    students.forEach(s => s._m = getStudentMetrics(s.id));
+        let sum = 0, count = 0;
+        tasks.forEach(t => {
+            let v = calcGradeValue(t.grade);
+            if (v !== null) { sum += v; count++; }
+        });
+        reportGeralMedia.innerText = count ? sum.toFixed(1) : '-';
 
-    // Apply class filter for ranking
-    const reportClassFilter = document.getElementById("filter-report-class").value;
-    let rankStudents = students.slice();
-    if (reportClassFilter) {
-        rankStudents = rankStudents.filter(s => s.class === reportClassFilter);
-    }
+        students.forEach(s => s._m = getStudentMetrics(s.id));
 
-    let top = rankStudents.sort((a, b) => b._m.completed - a._m.completed).slice(0, 5);
+        // Apply class filter for ranking
+        const reportClassFilter = filterReportClass ? filterReportClass.value : '';
+        let rankStudents = students.slice();
+        if (reportClassFilter) {
+            rankStudents = rankStudents.filter(s => s.class === reportClassFilter);
+        }
 
-    const list = document.getElementById("report-top-students");
-    list.innerHTML = "";
+        let top = rankStudents.sort((a, b) => b._m.completed - a._m.completed).slice(0, 5);
 
-    if (top.length === 0) {
-        list.innerHTML = `<p class="text-secondary ms-2">Nenhum aluno encontrado nesta turma.</p>`;
-        return;
-    }
+        reportTopStudents.innerHTML = "";
 
-    top.forEach((s, idx) => {
-        const medals = ['🥇','🥈','🥉'];
-        const medal = idx < 3 ? medals[idx] : `#${idx+1}`;
-        list.innerHTML += `
-            <div class="card glass mb-2">
-                <div class="card-top">
-                    <div style="display:flex; flex-direction:column; gap:0.1rem;">
-                        <div><b>${medal}</b> ${s.name}</div>
-                        <span style="font-size:0.78rem; color:var(--text-secondary); padding-left:1.6rem;">${s.class || 'Sem turma'}</span>
+        if (top.length === 0) {
+            reportTopStudents.innerHTML = `<p class="text-secondary ms-2">Nenhum aluno encontrado nesta turma.</p>`;
+            return;
+        }
+
+        top.forEach((s, idx) => {
+            const medals = ['🥇','🥈','🥉'];
+            const medal = idx < 3 ? medals[idx] : `#${idx+1}`;
+            reportTopStudents.innerHTML += `
+                <div class="card glass mb-2">
+                    <div class="card-top">
+                        <div style="display:flex; flex-direction:column; gap:0.1rem;">
+                            <div><b>${medal}</b> ${s.name}</div>
+                            <span style="font-size:0.78rem; color:var(--text-secondary); padding-left:1.6rem;">${s.class || 'Sem turma'}</span>
+                        </div>
+                        <span class="badge bg-success text-success">${s._m.completed} Vistos</span>
                     </div>
-                    <span class="badge bg-success text-success">${s._m.completed} Vistos</span>
                 </div>
-            </div>
-        `;
-    });
+            `;
+        });
+    } catch(e) {
+        console.error('Erro em renderReports:', e);
+    }
 };
 
 // --- MODALS ---
@@ -624,118 +702,141 @@ window.addEventListener('popstate', () => {
     _pushDummyState();
 });
 
-document.querySelectorAll(".close-modal").forEach(b => b.addEventListener('click', () => closeModal()));
-document.getElementById("modal-overlay").addEventListener('click', () => closeModal());
-
- 
-
+const initModalHandlers = () => {
+    document.querySelectorAll(".close-modal").forEach(b => {
+        b.addEventListener('click', () => closeModal());
+    });
+    const overlay = document.getElementById("modal-overlay");
+    if (overlay) overlay.addEventListener('click', () => closeModal());
+};
 
 
 
 // "Novo Aluno" button removed from student list view
 // Students can only be added via bulk registration in settings
 
-document.getElementById("form-bulk").addEventListener('submit', (e) => {
-    e.preventDefault();
-    const txt = document.getElementById("bulk-names").value;
-    const turma = document.getElementById("bulk-class").value;
-    const lines = txt.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+const initAllEventListeners = () => {
+    const formBulk = document.getElementById("form-bulk");
+    if (formBulk) {
+        formBulk.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const txt = document.getElementById("bulk-names").value;
+            const turma = document.getElementById("bulk-class").value;
+            const lines = txt.split('\n').map(l => l.trim()).filter(l => l.length > 0);
 
-    let students = DB.getStudents();
-    lines.forEach(name => {
-        students.push({
-            id: Date.now().toString() + Math.random().toString(36).substring(2, 5),
-            name: name,
-            class: turma,
-            createdAt: new Date().toISOString()
+            let students = DB.getStudents();
+            lines.forEach(name => {
+                students.push({
+                    id: Date.now().toString() + Math.random().toString(36).substring(2, 5),
+                    name: name,
+                    class: turma,
+                    createdAt: new Date().toISOString()
+                });
+            });
+            DB.saveStudents(students);
+
+            // Also save the class if it's new
+            if (turma) {
+                let classes = DB.getClasses();
+                if (!classes.includes(turma)) {
+                    classes.push(turma);
+                    classes.sort();
+                    DB.saveClasses(classes);
+                }
+            }
+
+            closeModal();
+            showToast(`${lines.length} alunos cadastrados em massa!`);
+            renderStudents();
+            renderClassesConfig();
+            navigateTo('view-students');
         });
-    });
-    DB.saveStudents(students);
-
-    // Also save the class if it's new
-    if (turma) {
-        let classes = DB.getClasses();
-        if (!classes.includes(turma)) {
-            classes.push(turma);
-            classes.sort();
-            DB.saveClasses(classes);
-        }
     }
 
-    closeModal();
-    showToast(`${lines.length} alunos cadastrados em massa!`);
-    renderStudents();
-    renderClassesConfig();
-    navigateTo('view-students');
-});
-
-document.getElementById("btn-edit-student").addEventListener('click', () => {
-    const st = DB.getStudents().find(s => s.id === currentStudentId);
-    if (st) {
-        document.getElementById("student-id").value = st.id;
-        document.getElementById("student-name").value = st.name;
-        document.getElementById("student-class").value = st.class;
-        document.getElementById("modal-student-title").innerText = "Editar Aluno";
-        openModal("modal-student");
+    const btnEditStudent = document.getElementById("btn-edit-student");
+    if (btnEditStudent) {
+        btnEditStudent.addEventListener('click', () => {
+            const st = DB.getStudents().find(s => s.id === currentStudentId);
+            if (st) {
+                document.getElementById("student-id").value = st.id;
+                document.getElementById("student-name").value = st.name;
+                document.getElementById("student-class").value = st.class;
+                document.getElementById("modal-student-title").innerText = "Editar Aluno";
+                openModal("modal-student");
+            }
+        });
     }
-});
 
-document.getElementById("btn-add-task").addEventListener('click', () => {
-    document.getElementById("form-task").reset();
-    document.getElementById("task-id").value = "";
-    document.getElementById("task-date").value = new Date().toISOString().split('T')[0];
-    document.getElementById("modal-task-title").innerText = "Nova Tarefa";
-    document.getElementById("btn-delete-task-modal").style.display = "none";
-    openModal("modal-task");
-});
-
-document.getElementById("btn-delete-task-modal").addEventListener('click', () => {
-    const id = document.getElementById("task-id").value;
-    if (id && confirm("Deseja realmente excluir esta tarefa/visto?")) {
-        DB.deleteTask(id);
-        renderTasks();
-        closeModal();
-        showToast("Tarefa excluída");
+    const btnAddTask = document.getElementById("btn-add-task");
+    if (btnAddTask) {
+        btnAddTask.addEventListener('click', () => {
+            document.getElementById("form-task").reset();
+            document.getElementById("task-id").value = "";
+            document.getElementById("task-date").value = new Date().toISOString().split('T')[0];
+            document.getElementById("modal-task-title").innerText = "Nova Tarefa";
+            document.getElementById("btn-delete-task-modal").style.display = "none";
+            openModal("modal-task");
+        });
     }
-});
 
-document.getElementById("form-student").addEventListener('submit', (e) => {
-    e.preventDefault();
-    const id = document.getElementById("student-id").value;
-    const obj = {
-        id: id || Date.now().toString(),
-        name: document.getElementById("student-name").value,
-        class: document.getElementById("student-class").value,
-        createdAt: new Date().toISOString()
-    };
-    if (id) DB.updateStudent(obj);
-    else DB.addStudent(obj);
+    const btnDeleteTaskModal = document.getElementById("btn-delete-task-modal");
+    if (btnDeleteTaskModal) {
+        btnDeleteTaskModal.addEventListener('click', () => {
+            const id = document.getElementById("task-id").value;
+            if (id && confirm("Deseja realmente excluir esta tarefa/visto?")) {
+                DB.deleteTask(id);
+                renderTasks();
+                closeModal();
+                showToast("Tarefa excluída");
+            }
+        });
+    }
 
-    closeModal();
-    renderStudents();
-    if (id && currentStudentId === id) openStudentDetails(id);
-    showToast("Aluno salvo!");
-});
+    const formStudent = document.getElementById("form-student");
+    if (formStudent) {
+        formStudent.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const id = document.getElementById("student-id").value;
+            const obj = {
+                id: id || Date.now().toString(),
+                name: document.getElementById("student-name").value,
+                class: document.getElementById("student-class").value,
+                createdAt: new Date().toISOString()
+            };
+            if (id) DB.updateStudent(obj);
+            else DB.addStudent(obj);
 
-document.getElementById("form-task").addEventListener('submit', (e) => {
-    e.preventDefault();
-    const id = document.getElementById("task-id").value;
-    const obj = {
-        id: id || Date.now().toString(),
-        studentId: currentStudentId,
-        name: document.getElementById("task-name").value,
-        date: document.getElementById("task-date").value,
-        status: 'concluido',
-        grade: document.getElementById("task-grade").value,
-        createdAt: new Date().toISOString()
-    };
-    if (id) DB.updateTask(obj);
-    else DB.addTask(obj);
+            closeModal();
+            renderStudents();
+            if (id && currentStudentId === id) openStudentDetails(id);
+            showToast("Aluno salvo!");
+        });
+    }
 
-    closeModal();
-    renderTasks();
-    showToast("Tarefa salva!");
-});
+    const formTask = document.getElementById("form-task");
+    if (formTask) {
+        formTask.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const id = document.getElementById("task-id").value;
+            const obj = {
+                id: id || Date.now().toString(),
+                studentId: currentStudentId,
+                name: document.getElementById("task-name").value,
+                date: document.getElementById("task-date").value,
+                status: 'concluido',
+                grade: document.getElementById("task-grade").value,
+                createdAt: new Date().toISOString()
+            };
+            if (id) DB.updateTask(obj);
+            else DB.addTask(obj);
+
+            closeModal();
+            renderTasks();
+            showToast("Tarefa salva!");
+        });
+    }
+};
+
 
 
 // --- EXPORT & SETTINGS ---
@@ -745,7 +846,9 @@ const bindClick = (id, fn) => {
     if (el) el.addEventListener('click', fn);
 };
 
-bindClick("btn-export-json", () => {
+// Initialize event listeners when DOM is ready
+const initEventListeners = () => {
+    bindClick("btn-export-json", () => {
     const data = {
         alunos: DB.getStudents(),
         tarefas: DB.getTasks(),
@@ -808,10 +911,11 @@ bindClick("btn-bulk-students", () => {
     openModal("modal-bulk");
 });
 
-bindClick("btn-manage-classes", () => {
-    renderClassesConfig();
-    openModal("modal-manage-classes");
-});
+    bindClick("btn-manage-classes", () => {
+        renderClassesConfig();
+        openModal("modal-manage-classes");
+    });
+};
 
 // --- GERENCIAR TURMAS ---
 const renderClassesConfig = () => {
@@ -918,7 +1022,14 @@ window.deleteClassAction = (c) => {
 };
 
  
-
+window.deleteClassAction = (c) => {
+    if (confirm(`Excluir a turma "${c}" do cadastro? Os alunos NÃO serão apagados, mas a turma sumirá das opções.`)) {
+        let classes = DB.getClasses().filter(x => x !== c);
+        DB.saveClasses(classes);
+        renderClassesConfig();
+        renderStudents();
+    }
+};
 
 const formManageAddClass = document.getElementById("form-manage-add-class");
 if (formManageAddClass) {
@@ -950,6 +1061,7 @@ if (formManageAddClass) {
             }
 
             document.getElementById("new-class-name-manage").value = "";
+            document.getElementById("new-class-name-manage").value = "";
             document.getElementById("new-class-students-manage").value = "";
             renderClassesConfig();
             renderStudents();
@@ -959,17 +1071,34 @@ if (formManageAddClass) {
 }
 
 // ─── BOOT ───────────────────────────────────────────────────────────
-initTheme();
-renderClassesConfig();
-renderStudents();
+const initializeApp = () => {
+    initTheme();
+    renderClassesConfig();
+    renderStudents();
+    initAllEventListeners();
+    initEventListeners();
+    initNavigation();
+    initMonthFilter();
+    initThemeSelectors();
+    initStudentFilters();
+    initTaskFilters();
+    initModalHandlers();
 
-// Seed navigation stack with the initial view
-navStack.push({ type: 'view', id: 'view-students' });
+    // Seed navigation stack with the initial view
+    navStack.push({ type: 'view', id: 'view-students' });
 
-// Replace the current history entry with a base state,
-// then push a dummy so the FIRST back press is caught by popstate
-history.replaceState({ appBase: true }, '');
-_pushDummyState();
+    // Replace the current history entry with a base state,
+    // then push a dummy so the FIRST back press is caught by popstate
+    history.replaceState({ appBase: true }, '');
+    _pushDummyState();
+};
+
+// Call initialization when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeApp);
+} else {
+    initializeApp();
+}
 
 // Register Service Worker for PWA support
 if ('serviceWorker' in navigator) {
