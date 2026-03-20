@@ -1022,6 +1022,24 @@ bindClick("btn-bulk-students", () => {
         renderClassesConfig();
         openModal("modal-manage-classes");
     });
+
+    bindClick("btn-force-update", () => {
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistration().then(reg => {
+                if (reg) {
+                    showToast("Verificando se há atualizações...", "success");
+                    reg.update().then(() => {
+                        showToast("Atualização verificada. Recarregando...", "success");
+                        setTimeout(() => window.location.reload(), 800);
+                    });
+                } else {
+                    window.location.reload();
+                }
+            });
+        } else {
+            window.location.reload();
+        }
+    });
 };
 
 // --- GERENCIAR TURMAS ---
@@ -1200,6 +1218,26 @@ if (document.readyState === 'loading') {
 // Register Service Worker for PWA support
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(() => {});
+        navigator.serviceWorker.register('./sw.js').then(reg => {
+            // Check for updates periodically or on user interaction if needed
+            reg.onupdatefound = () => {
+                const installingWorker = reg.installing;
+                installingWorker.onstatechange = () => {
+                    if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        // New content is available; please refresh.
+                        showToast("Nova atualização disponível! Recarregando...", "success");
+                        setTimeout(() => window.location.reload(), 1500);
+                    }
+                };
+            };
+        }).catch(err => console.error('SW register error:', err));
+    });
+
+    // Handle the transition to the new service worker
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (refreshing) return;
+        refreshing = true;
+        window.location.reload();
     });
 }
