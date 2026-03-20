@@ -51,6 +51,7 @@ const DB = {
     clearAll: () => {
         localStorage.removeItem('escola_alunos');
         localStorage.removeItem('escola_tarefas');
+        localStorage.removeItem('escola_classes');
     }
 };
 
@@ -330,6 +331,56 @@ const renderStudents = () => {
     });
 
     list.appendChild(compactList);
+
+    // Also update Top 10 from here
+    renderTop10();
+};
+
+const renderTop10 = () => {
+    const list = document.getElementById("top10-list");
+    const container = document.getElementById("top10-home");
+    const searchVal = document.getElementById("search-student").value;
+    const classFilter = document.getElementById("filter-students-class").value;
+    
+    // Only show Top 10 when not searching or filtering by class, to avoid clutter
+    if (searchVal || classFilter) {
+        container.style.display = "none";
+        return;
+    }
+
+    const students = DB.getStudents();
+    students.forEach(s => s._m = getStudentMetrics(s.id));
+    
+    // Sort by monthly completed tasks and take top 10
+    const top = students
+        .filter(s => s._m.completed > 0)
+        .sort((a, b) => b._m.completed - a._m.completed)
+        .slice(0, 10);
+
+    if (top.length === 0) {
+        container.style.display = "none";
+        return;
+    }
+
+    container.style.display = "block";
+    list.innerHTML = "";
+    
+    top.forEach((s, idx) => {
+        const row = document.createElement("div");
+        row.className = "top10-row";
+        const rankLabel = idx + 1;
+        
+        row.innerHTML = `
+            <div class="top10-rank">${rankLabel}</div>
+            <div class="top10-info">
+                <div class="top10-name">
+                    ${s.name}, turma ${s.class || 'N/A'} - <strong>${s._m.completed} vistos</strong>
+                </div>
+            </div>
+        `;
+        row.addEventListener('click', () => openStudentDetails(s.id));
+        list.appendChild(row);
+    });
 };
 
 document.getElementById("search-student").addEventListener('input', renderStudents);
@@ -576,10 +627,8 @@ window.addEventListener('popstate', () => {
 document.querySelectorAll(".close-modal").forEach(b => b.addEventListener('click', () => closeModal()));
 document.getElementById("modal-overlay").addEventListener('click', () => closeModal());
 
-document.getElementById("btn-bulk-students").addEventListener('click', () => {
-    document.getElementById("form-bulk").reset();
-    openModal("modal-bulk");
-});
+ 
+
 
 
 
@@ -602,9 +651,21 @@ document.getElementById("form-bulk").addEventListener('submit', (e) => {
         });
     });
     DB.saveStudents(students);
+
+    // Also save the class if it's new
+    if (turma) {
+        let classes = DB.getClasses();
+        if (!classes.includes(turma)) {
+            classes.push(turma);
+            classes.sort();
+            DB.saveClasses(classes);
+        }
+    }
+
     closeModal();
     showToast(`${lines.length} alunos cadastrados em massa!`);
     renderStudents();
+    renderClassesConfig();
     navigateTo('view-students');
 });
 
@@ -678,49 +739,78 @@ document.getElementById("form-task").addEventListener('submit', (e) => {
 
 
 // --- EXPORT & SETTINGS ---
-document.getElementById("btn-export-json").addEventListener('click', () => {
+// Safety wrapper for listeners
+const bindClick = (id, fn) => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('click', fn);
+};
+
+bindClick("btn-export-json", () => {
     const data = {
         alunos: DB.getStudents(),
         tarefas: DB.getTasks(),
+        classes: DB.getClasses(),
         exportData: new Date().toISOString()
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
+    a.style.display = 'none';
     a.href = url;
-    a.download = `backup_escola_${Date.now()}.json`;
+    a.download = `backup_escola_${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
     a.click();
+    setTimeout(() => {
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+    }, 100);
 });
 
-document.getElementById("import-json").addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        try {
-            const data = JSON.parse(e.target.result);
-            if (data.alunos && data.tarefas) {
-                DB.saveStudents(data.alunos);
-                DB.saveTasks(data.tarefas);
-                showToast("Dados recuperados com sucesso!");
-                renderStudents();
-            } else {
-                showToast("Formato de arquivo inválido", "error");
+const importInput = document.getElementById("import-json");
+if (importInput) {
+    importInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+                if (data.alunos) {
+                    DB.saveStudents(data.alunos);
+                    if (data.tarefas) DB.saveTasks(data.tarefas);
+                    if (data.classes) DB.saveClasses(data.classes);
+                    showToast("Dados recuperados com sucesso!");
+                    renderClassesConfig();
+                    renderStudents();
+                } else {
+                    showToast("Formato de arquivo inválido", "error");
+                }
+            } catch (err) {
+                showToast("Erro ao ler JSON", "error");
             }
-        } catch (err) {
-            showToast("Erro ao ler JSON", "error");
-        }
-    };
-    reader.readAsText(file);
-});
+        };
+        reader.readAsText(file);
+    });
+}
 
-document.getElementById("btn-clear-data").addEventListener('click', () => {
-    if (confirm("ATENÇÃO: Isso apagará TODOS os seus alunos e vistos permanentemente do dispositivo. Confirma?")) {
+bindClick("btn-clear-data", () => {
+    if (confirm("ATENÇÃO: Isso apagará TODOS os seus alunos, turmas e vistos permanentemente do dispositivo. Confirma?")) {
         DB.clearAll();
+        renderClassesConfig();
         renderStudents();
-        showToast("Dados apagados!");
+        showToast("Todos os dados foram apagados!");
         navigateTo('view-students');
     }
+});
+
+bindClick("btn-bulk-students", () => {
+    document.getElementById("form-bulk").reset();
+    openModal("modal-bulk");
+});
+
+bindClick("btn-manage-classes", () => {
+    renderClassesConfig();
+    openModal("modal-manage-classes");
 });
 
 // --- GERENCIAR TURMAS ---
@@ -757,23 +847,65 @@ const renderClassesConfig = () => {
     if (sClass) { const v2 = sClass.value; sClass.innerHTML = buildOpts("Selecione a Turma"); sClass.value = v2; }
 
     const bClass = document.getElementById("bulk-class");
-    if (bClass) { const v3 = bClass.value; bClass.innerHTML = buildOpts("Nenhuma / Sem Turma"); bClass.value = v3; }
+    // bulk-class is now an input, so we don't build options for it
+    if (bClass && bClass.tagName === 'SELECT') { 
+        const v3 = bClass.value; 
+        bClass.innerHTML = buildOpts("Nenhuma / Sem Turma"); 
+        bClass.value = v3; 
+    }
 
     const list = document.getElementById("classes-list");
     if (list) {
+        list.className = "list"; // reuse list spacing
         list.innerHTML = "";
         if (classes.length === 0) list.innerHTML = "<p class='text-secondary'>Nenhuma turma cadastrada.</p>";
 
         classes.forEach(c => {
-            const d = document.createElement("div");
-            d.className = "setting-item glass";
-            d.innerHTML = `
-                <div style="flex:1;"><b>${c}</b></div>
-                <button class="icon-btn text-danger" onclick="deleteClassAction('${c}')"><i class="fas fa-trash"></i></button>
+            const classStudents = students.filter(s => s.class === c);
+            const panel = document.createElement("div");
+            panel.className = "class-panel";
+            
+            let studentsHtml = classStudents.length > 0 
+                ? classStudents.map(s => `
+                    <div class="class-student-item">
+                        <i class="fas fa-user-graduate"></i>
+                        <span>${s.name}</span>
+                    </div>
+                  `).join('')
+                : "<p class='text-secondary' style='font-size:0.75rem; padding: 0.5rem;'>Nenhum aluno nesta turma.</p>";
+
+            panel.innerHTML = `
+                <div class="class-panel-header" onclick="this.nextElementSibling.style.display = (this.nextElementSibling.style.display === 'none' ? 'flex' : 'none')">
+                    <div style="flex:1;">
+                        <span class="class-panel-title">${c}</span>
+                        <span class="class-student-count">(${classStudents.length} alunos)</span>
+                    </div>
+                    <div style="display:flex; gap:0.5rem;">
+                        <button class="icon-btn text-primary" onclick="event.stopPropagation(); window.addStudentsToClass('${c}')">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                        <button class="icon-btn text-danger" onclick="event.stopPropagation(); deleteClassAction('${c}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        <i class="fas fa-chevron-down text-secondary" style="font-size:0.8rem; align-self:center;"></i>
+                    </div>
+                </div>
+                <div class="class-panel-students" style="display: none;">
+                    ${studentsHtml}
+                </div>
             `;
-            list.appendChild(d);
+            list.appendChild(panel);
         });
     }
+};
+
+window.addStudentsToClass = (c) => {
+    closeModal();
+    setTimeout(() => {
+        document.getElementById("form-bulk").reset();
+        document.getElementById("bulk-class").value = c;
+        openModal("modal-bulk");
+    }, 400); // Wait for modal animation
 };
 
 window.deleteClassAction = (c) => {
@@ -785,30 +917,43 @@ window.deleteClassAction = (c) => {
     }
 };
 
-const btnManageClasses = document.getElementById("btn-manage-classes");
-if (btnManageClasses) {
-    btnManageClasses.addEventListener('click', () => {
-        renderClassesConfig();
-        openModal("modal-manage-classes");
-    });
-}
+ 
 
-const formAddClass = document.getElementById("form-add-class");
-if (formAddClass) {
-    formAddClass.addEventListener('submit', (e) => {
+
+const formManageAddClass = document.getElementById("form-manage-add-class");
+if (formManageAddClass) {
+    formManageAddClass.addEventListener('submit', (e) => {
         e.preventDefault();
-        const val = document.getElementById("new-class-name").value.trim();
-        if (val) {
+        const className = document.getElementById("new-class-name-manage").value.trim();
+        const studentNamesRaw = document.getElementById("new-class-students-manage").value;
+        const studentNames = studentNamesRaw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+        if (className) {
             let classes = DB.getClasses();
-            if (!classes.includes(val)) {
-                classes.push(val);
+            if (!classes.includes(className)) {
+                classes.push(className);
                 classes.sort();
                 DB.saveClasses(classes);
-                document.getElementById("new-class-name").value = "";
-                renderClassesConfig();
-            } else {
-                showToast("Turma já cadastrada", "error");
             }
+
+            if (studentNames.length > 0) {
+                let students = DB.getStudents();
+                studentNames.forEach(name => {
+                    students.push({
+                        id: Date.now().toString() + Math.random().toString(36).substring(2, 5),
+                        name: name,
+                        class: className,
+                        createdAt: new Date().toISOString()
+                    });
+                });
+                DB.saveStudents(students);
+            }
+
+            document.getElementById("new-class-name-manage").value = "";
+            document.getElementById("new-class-students-manage").value = "";
+            renderClassesConfig();
+            renderStudents();
+            showToast(`Turma ${className} e ${studentNames.length} alunos cadastrados!`);
         }
     });
 }

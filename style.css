@@ -63,9 +63,9 @@
     --bg-base: #fdf2f8;
     --text-primary: #831843;
     --text-secondary: #be185d;
-    --glass-bg: rgba(255, 255, 255, 0.6);
-    --glass-border: rgba(244, 114, 182, 0.3);
-    --glass-shadow: 0 8px 32px 0 rgba(190, 24, 93, 0.05);
+    --glass-bg: rgba(252, 231, 243, 0.85);
+    --glass-border: rgba(244, 114, 182, 0.35);
+    --glass-shadow: 0 8px 32px 0 rgba(190, 24, 93, 0.08);
 
     --primary: #db2777;
     --primary-light: #f472b6;
@@ -77,9 +77,9 @@
     --danger-bg: #fee2e2;
 
     --fab-bg: #db2777;
-    --nav-bg: rgba(253, 242, 248, 0.9);
+    --nav-bg: rgba(252, 231, 243, 0.95);
     --nav-active: #db2777;
-    --nav-inactive: #fbcfe8;
+    --nav-inactive: #f9a8d4;
 }
 
 [data-theme="red"] {
@@ -132,12 +132,12 @@
 
 [data-theme="green"] {
     color-scheme: light;
-    --bg-base: #ecfdf5;
+    --bg-base: #f0fdf4;
     --text-primary: #064e3b;
     --text-secondary: #059669;
-    --glass-bg: rgba(255, 255, 255, 0.6);
-    --glass-border: rgba(52, 211, 153, 0.3);
-    --glass-shadow: 0 8px 32px 0 rgba(5, 150, 105, 0.05);
+    --glass-bg: rgba(187, 247, 208, 0.85);
+    --glass-border: rgba(52, 211, 153, 0.35);
+    --glass-shadow: 0 8px 32px 0 rgba(5, 150, 105, 0.08);
 
     --primary: #059669;
     --primary-light: #34d399;
@@ -149,9 +149,9 @@
     --danger-bg: #fee2e2;
 
     --fab-bg: #059669;
-    --nav-bg: rgba(236, 253, 245, 0.9);
+    --nav-bg: rgba(187, 247, 208, 0.95);
     --nav-active: #059669;
-    --nav-inactive: #a7f3d0;
+    --nav-inactive: #6ee7b7;
 }
 
 [data-theme="purple"] {
@@ -1093,4 +1093,146 @@ select option {
 [data-theme="dark"] .visto-badge.no-activity {
     background: rgba(239, 68, 68, 0.18);
     color: #f87171;
-}
+}
+
+/* ─── TOP 10 HOME RANKING ─────────────────────────────────────────── */
+.top10-section {
+    margin-bottom: 1rem;
+}
+
+.top10-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0.25rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.4rem;
+}
+
+.top10-header i { color: var(--primary); font-size: 1.1rem; }
+
+.top10-row {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.55rem 0.9rem;
+    border-radius: var(--radius-md);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    margin-bottom: 0.35rem;
+    transition: transform 0.15s;
+    cursor: pointer;
+}
+
+.top10-row:active { transform: scale(0.985); }
+
+.top10-rank {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--primary);
+    min-width: 32px;
+    text-align: center;
+}
+
+.top10-info { flex: 1; min-width: 0; }
+
+.top10-name {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.top10-class {
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+    display: inline-block;
+}
+
+.top10-badge {
+    color: var(--success);
+    font-weight: 800;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: baseline;
+    gap: 0.2rem;
+}
+
+.top10-badge small {
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ─── MANAGE CLASSES MODAL IMPROVEMENTS ──────────────────────────── */
+.class-section-header {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.5rem 0 0.25rem;
+    border-top: 1px solid var(--glass-border);
+    margin-top: 0.5rem;
+}
+
+.class-panel {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.class-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    padding: 0.25rem 0;
+}
+
+.class-panel-title {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text-primary);
+}
+
+.class-student-count {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    margin-left: 0.5rem;
+}
+
+.class-panel-students {
+    margin-top: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.class-student-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.5rem;
+    border-radius: var(--radius-sm);
+    background: var(--bg-base);
+    font-size: 0.88rem;
+    color: var(--text-primary);
+}
+
+.class-student-item i {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
