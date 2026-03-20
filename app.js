@@ -322,38 +322,40 @@ const renderStudents = () => {
     // Determine Top 10 (Monthly)
     const allStudentsForRank = DB.getStudents();
     allStudentsForRank.forEach(s => s._m = getStudentMetrics(s.id));
-    const top10Ids = allStudentsForRank
+    const top3Ids = allStudentsForRank
         .filter(s => s._m.completed > 0)
         .sort((a, b) => b._m.completed - a._m.completed)
-        .slice(0, 10)
+        .slice(0, 3)
         .map(s => s.id);
 
     // If no search/filter is active, we might want to group them
     const isFiltered = query || clsFilter || actFilter || sort !== 'name-asc';
 
-    if (!isFiltered && top10Ids.length > 0) {
-        // Section: Top 10
+    if (!isFiltered && top3Ids.length > 0) {
+        // Section: Top 3
         const topHeader = document.createElement('div');
         topHeader.className = 'top10-header';
-        topHeader.innerHTML = '<i class="fas fa-crown"></i> <span>Top 10 Alunos (Mais Vistos no Mês)</span>';
+        topHeader.innerHTML = '<i class="fas fa-crown"></i> <span>Top 3 Alunos (Mais Vistos no Mês)</span>';
         list.appendChild(topHeader);
 
-        students.forEach(s => {
-            const rankIdx = top10Ids.indexOf(s.id);
-            if (rankIdx !== -1) {
-                const row = document.createElement('div');
-                row.className = 'top10-row';
-                row.innerHTML = `
-                    <div class="top10-rank">${rankIdx + 1}</div>
-                    <div class="top10-info">
-                        <div class="top10-name">${s.name}</div>
-                        <div class="top10-class">${s.class || 'N/A'} — <b>${s._metrics.completed} vistos</b></div>
-                    </div>
-                    <i class="fas fa-chevron-right text-secondary" style="font-size:0.8rem;"></i>
-                `;
-                row.onclick = () => openStudentDetails(s.id);
-                list.appendChild(row);
-            }
+        // Filter and SORT the top students by rank before rendering
+        const topStudents = students.filter(s => top3Ids.includes(s.id))
+            .sort((a, b) => b._metrics.completed - a._metrics.completed);
+
+        topStudents.forEach(s => {
+            const rankIdx = top3Ids.indexOf(s.id);
+            const row = document.createElement('div');
+            row.className = 'top10-row';
+            row.innerHTML = `
+                <div class="top10-rank">${rankIdx + 1}</div>
+                <div class="top10-info">
+                    <div class="top10-name">${s.name}</div>
+                    <div class="top10-class">${s.class || 'N/A'} — <b>${s._metrics.completed} vistos</b></div>
+                </div>
+                <i class="fas fa-chevron-right text-secondary" style="font-size:0.8rem;"></i>
+            `;
+            row.onclick = () => openStudentDetails(s.id);
+            list.appendChild(row);
         });
 
         // Section: Others
@@ -366,7 +368,7 @@ const renderStudents = () => {
         const compactList = document.createElement('div');
         compactList.className = 'student-compact-list';
         students.forEach(s => {
-            if (!top10Ids.includes(s.id)) {
+            if (!top3Ids.includes(s.id)) {
                 compactList.appendChild(createStudentRow(s));
             }
         });
@@ -381,10 +383,8 @@ const renderStudents = () => {
         const compactList = document.createElement('div');
         compactList.className = 'student-compact-list';
         students.forEach(s => {
-            const rankIdx = top10Ids.indexOf(s.id);
+            const rankIdx = top3Ids.indexOf(s.id);
             if (rankIdx !== -1) {
-                // Highlight top 10 even in filtered list but keep normal row style or special rank?
-                // The user said "ranking 1 nome do aluno", let's use a variation
                 compactList.appendChild(createStudentRow(s, rankIdx + 1));
             } else {
                 compactList.appendChild(createStudentRow(s));
@@ -594,15 +594,24 @@ const renderReports = () => {
         const reportGeralMedia = document.getElementById("report-geral-media");
         const reportTopStudents = document.getElementById("report-top-students");
         const filterReportClass = document.getElementById("filter-report-class");
-        
+        const reportClassFilter = filterReportClass ? filterReportClass.value : '';
+
         if (!reportTotalAlunos || !reportTotalVistos || !reportGeralMedia || !reportTopStudents) {
             return; // Elementos de report não existem, skip
         }
 
-        const students = DB.getStudents();
+        let students = DB.getStudents();
         let tasks = DB.getTasks();
+
         if (currentMonth) {
             tasks = tasks.filter(t => t.date.startsWith(currentMonth));
+        }
+
+        // Apply class filter to students and tasks
+        if (reportClassFilter) {
+            students = students.filter(s => s.class === reportClassFilter);
+            const studentIdsInClass = new Set(students.map(s => s.id));
+            tasks = tasks.filter(t => studentIdsInClass.has(t.studentId));
         }
 
         reportTotalAlunos.innerText = students.length;
@@ -617,14 +626,7 @@ const renderReports = () => {
 
         students.forEach(s => s._m = getStudentMetrics(s.id));
 
-        // Apply class filter for ranking
-        const reportClassFilter = filterReportClass ? filterReportClass.value : '';
-        let rankStudents = students.slice();
-        if (reportClassFilter) {
-            rankStudents = rankStudents.filter(s => s.class === reportClassFilter);
-        }
-
-        let top = rankStudents.sort((a, b) => b._m.completed - a._m.completed).slice(0, 5);
+        let top = students.sort((a, b) => b._m.completed - a._m.completed).slice(0, 5);
 
         reportTopStudents.innerHTML = "";
 
