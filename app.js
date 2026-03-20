@@ -8,6 +8,9 @@ const DB = {
     saveTasks: (data) => localStorage.setItem('escola_tarefas', JSON.stringify(data)),
     getClasses: () => JSON.parse(localStorage.getItem('escola_classes') || '[]'),
     saveClasses: (data) => localStorage.setItem('escola_classes', JSON.stringify(data)),
+    
+    getCustomTheme: () => JSON.parse(localStorage.getItem('escola_custom_theme') || '{"primary": "#6366f1", "base": "light"}'),
+    saveCustomTheme: (data) => localStorage.setItem('escola_custom_theme', JSON.stringify(data)),
 
     addStudent: (student) => {
         const students = DB.getStudents();
@@ -135,8 +138,26 @@ const initTheme = () => {
 
 const setTheme = (theme) => {
     try {
-        document.documentElement.setAttribute("data-theme", theme);
+        const root = document.documentElement;
+        root.setAttribute("data-theme", theme);
         localStorage.setItem("escola_theme", theme);
+        
+        // Show/Hide custom controls
+        const customControls = document.getElementById("custom-theme-controls");
+        if (customControls) customControls.style.display = theme === 'custom' ? 'block' : 'none';
+
+        if (theme === 'custom') {
+            const customData = DB.getCustomTheme();
+            applyCustomTheme(customData.primary, customData.base);
+            
+            // Sync inputs if they exist
+            const colorInput = document.getElementById("custom-color-primary");
+            const baseSelect = document.getElementById("custom-theme-base");
+            if (colorInput) colorInput.value = customData.primary;
+            if (baseSelect) baseSelect.value = customData.base;
+        } else {
+            clearCustomTheme();
+        }
         
         // Update theme selector buttons
         document.querySelectorAll(".theme-btn").forEach(btn => {
@@ -147,10 +168,73 @@ const setTheme = (theme) => {
     }
 };
 
+const applyCustomTheme = (primary, base) => {
+    const root = document.documentElement;
+    if (base === 'dark') {
+        root.style.setProperty('--bg-base', '#0f172a');
+        root.style.setProperty('--text-primary', '#f8fafc');
+        root.style.setProperty('--text-secondary', '#94a3b8');
+        root.style.setProperty('--glass-bg', 'rgba(30, 41, 59, 0.75)');
+        root.style.setProperty('--glass-border', 'rgba(255, 255, 255, 0.08)');
+        root.style.setProperty('--nav-bg', 'rgba(15, 23, 42, 0.9)');
+        root.style.setProperty('--nav-active', primary);
+        root.style.setProperty('--nav-inactive', '#64748b');
+    } else {
+        root.style.setProperty('--bg-base', '#f1f5f9');
+        root.style.setProperty('--text-primary', '#0f172a');
+        root.style.setProperty('--text-secondary', '#64748b');
+        root.style.setProperty('--glass-bg', 'rgba(255, 255, 255, 0.75)');
+        root.style.setProperty('--glass-border', 'rgba(255, 255, 255, 0.5)');
+        root.style.setProperty('--nav-bg', 'rgba(255, 255, 255, 0.9)');
+        root.style.setProperty('--nav-active', primary);
+        root.style.setProperty('--nav-inactive', '#94a3b8');
+    }
+    root.style.setProperty('--primary', primary);
+    root.style.setProperty('--primary-light', primary + 'b3'); // b3 is ~70% opacity in hex
+    root.style.setProperty('--fab-bg', primary);
+};
+
+const clearCustomTheme = () => {
+    const root = document.documentElement;
+    const props = [
+        '--bg-base', '--text-primary', '--text-secondary', 
+        '--glass-bg', '--glass-border', '--nav-bg', 
+        '--nav-active', '--nav-inactive', '--primary', 
+        '--primary-light', '--fab-bg'
+    ];
+    props.forEach(p => root.style.removeProperty(p));
+};
+
 const initThemeSelectors = () => {
     document.querySelectorAll("[data-set-theme]").forEach(btn => {
         btn.addEventListener('click', () => setTheme(btn.dataset.setTheme));
     });
+
+    // Custom theme real-time updates
+    const colorInput = document.getElementById("custom-color-primary");
+    const baseSelect = document.getElementById("custom-theme-base");
+    
+    if (colorInput) {
+        colorInput.addEventListener('input', (e) => {
+            const primary = e.target.value;
+            const base = baseSelect.value;
+            DB.saveCustomTheme({ primary, base });
+            if (document.documentElement.getAttribute('data-theme') === 'custom') {
+                applyCustomTheme(primary, base);
+            }
+        });
+    }
+    
+    if (baseSelect) {
+        baseSelect.addEventListener('change', (e) => {
+            const primary = colorInput.value;
+            const base = e.target.value;
+            DB.saveCustomTheme({ primary, base });
+            if (document.documentElement.getAttribute('data-theme') === 'custom') {
+                applyCustomTheme(primary, base);
+            }
+        });
+    }
 };
 
 // ─── NAVIGATION STACK ───────────────────────────────────────────────

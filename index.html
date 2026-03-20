@@ -200,6 +200,33 @@
                             <button class="theme-btn" data-set-theme="red" style="background: #ef4444;" title="Vermelho"></button>
                             <button class="theme-btn" data-set-theme="purple" style="background: #8b5cf6;" title="Roxo"></button>
                             <button class="theme-btn" data-set-theme="orange" style="background: #f97316;" title="Laranja"></button>
+                            <button class="theme-btn" data-set-theme="custom" id="btn-theme-custom" 
+                                style="background: linear-gradient(45deg, #ff0080, #7928ca); border: 2px dashed rgba(255,255,255,0.4); display: flex; align-items: center; justify-content: center;" title="Personalizado">
+                                <i class="fas fa-palette" style="color: white; font-size: 0.9rem;"></i>
+                            </button>
+                        </div>
+
+                        <!-- Custom Theme Controls -->
+                        <div id="custom-theme-controls" style="display: none; width: 100%; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--glass-border); animation: fadeIn 0.3s ease;">
+                            <h4 style="font-size: 0.9rem; margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="fas fa-sliders-h text-primary"></i> Personalizar Cores
+                            </h4>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                <div class="input-group" style="margin-bottom: 0.5rem;">
+                                    <label style="font-size: 0.75rem; opacity: 0.8;">Cor Principal</label>
+                                    <input type="color" id="custom-color-primary" value="#6366f1" style="width: 100%; height: 38px; border: none; border-radius: 8px; cursor: pointer; background: none;">
+                                </div>
+                                <div class="input-group" style="margin-bottom: 0.5rem;">
+                                    <label style="font-size: 0.75rem; opacity: 0.8;">Tom de Fundo</label>
+                                    <select id="custom-theme-base" style="width: 100%; padding: 0.5rem; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--bg-base); color: var(--text-primary); font-family: inherit; font-size: 0.85rem;">
+                                        <option value="light">Claro</option>
+                                        <option value="dark">Escuro</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <p style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                                <i class="fas fa-info-circle"></i> A cor principal será aplicada em botões e destaques.
+                            </p>
                         </div>
                     </div>
 
