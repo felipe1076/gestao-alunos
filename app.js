@@ -319,110 +319,119 @@ const renderStudents = () => {
         return;
     }
 
-    // Count header
-    const counter = document.createElement('div');
-    counter.className = 'list-count-header';
-    counter.textContent = `${students.length} aluno${students.length !== 1 ? 's' : ''}`;
-    list.appendChild(counter);
+    // Determine Top 10 (Monthly)
+    const allStudentsForRank = DB.getStudents();
+    allStudentsForRank.forEach(s => s._m = getStudentMetrics(s.id));
+    const top10Ids = allStudentsForRank
+        .filter(s => s._m.completed > 0)
+        .sort((a, b) => b._m.completed - a._m.completed)
+        .slice(0, 10)
+        .map(s => s.id);
 
-    // Compact list wrapper
-    const compactList = document.createElement('div');
-    compactList.className = 'student-compact-list';
+    // If no search/filter is active, we might want to group them
+    const isFiltered = query || clsFilter || actFilter || sort !== 'name-asc';
 
-    students.forEach(s => {
-        const hasActivity = s._metrics.total > 0;
-        const color = hasActivity ? getAvatarColor(s.name) : '#ef4444';
-        const initials = getInitials(s.name);
-        const row = document.createElement('div');
-        row.className = 'student-row';
-        row.innerHTML = `
-            <div class="student-avatar" style="background:${color};">${initials}</div>
-            <div class="student-info">
-                <div class="student-name">${s.name}</div>
-                <div class="student-class-tag">${s.class || 'Sem turma'}</div>
-            </div>
-            <div class="visto-badge${!hasActivity ? ' no-activity' : ''}">
-                <i class="fas fa-check-circle"></i>
-                ${s._metrics.completed}
-            </div>
-            <button class="student-row-edit" onclick="editStudentAction(event, '${s.id}')" aria-label="Editar aluno">
-                <i class="fas fa-pen"></i>
-            </button>
-            <i class="fas fa-chevron-right student-chevron"></i>
-        `;
-        row.addEventListener('click', (e) => {
-            if (!e.target.closest('.student-row-edit')) {
-                openStudentDetails(s.id);
+    if (!isFiltered && top10Ids.length > 0) {
+        // Section: Top 10
+        const topHeader = document.createElement('div');
+        topHeader.className = 'top10-header';
+        topHeader.innerHTML = '<i class="fas fa-crown"></i> <span>Top 10 Alunos (Mais Vistos no Mês)</span>';
+        list.appendChild(topHeader);
+
+        students.forEach(s => {
+            const rankIdx = top10Ids.indexOf(s.id);
+            if (rankIdx !== -1) {
+                const row = document.createElement('div');
+                row.className = 'top10-row';
+                row.innerHTML = `
+                    <div class="top10-rank">${rankIdx + 1}</div>
+                    <div class="top10-info">
+                        <div class="top10-name">${s.name}</div>
+                        <div class="top10-class">${s.class || 'N/A'} — <b>${s._metrics.completed} vistos</b></div>
+                    </div>
+                    <i class="fas fa-chevron-right text-secondary" style="font-size:0.8rem;"></i>
+                `;
+                row.onclick = () => openStudentDetails(s.id);
+                list.appendChild(row);
             }
         });
-        compactList.appendChild(row);
-    });
 
-    list.appendChild(compactList);
+        // Section: Others
+        const othersHeader = document.createElement('div');
+        othersHeader.className = 'top10-header';
+        othersHeader.style.marginTop = '1rem';
+        othersHeader.innerHTML = '<i class="fas fa-users"></i> <span>Demais Alunos</span>';
+        list.appendChild(othersHeader);
 
-    // Also update Top 10 from here
-    try { renderTop10(); } catch(e) { console.error('Erro ao renderizar top10:', e); }
+        const compactList = document.createElement('div');
+        compactList.className = 'student-compact-list';
+        students.forEach(s => {
+            if (!top10Ids.includes(s.id)) {
+                compactList.appendChild(createStudentRow(s));
+            }
+        });
+        list.appendChild(compactList);
+    } else {
+        // Regular list
+        const counter = document.createElement('div');
+        counter.className = 'list-count-header';
+        counter.textContent = `${students.length} aluno${students.length !== 1 ? 's' : ''}`;
+        list.appendChild(counter);
+
+        const compactList = document.createElement('div');
+        compactList.className = 'student-compact-list';
+        students.forEach(s => {
+            const rankIdx = top10Ids.indexOf(s.id);
+            if (rankIdx !== -1) {
+                // Highlight top 10 even in filtered list but keep normal row style or special rank?
+                // The user said "ranking 1 nome do aluno", let's use a variation
+                compactList.appendChild(createStudentRow(s, rankIdx + 1));
+            } else {
+                compactList.appendChild(createStudentRow(s));
+            }
+        });
+        list.appendChild(compactList);
+    }
     } catch(e) {
         console.error('Erro ao renderizar students:', e);
     }
 };
 
-const renderTop10 = () => {
-    try {
-        const list = document.getElementById("top10-list");
-        const container = document.getElementById("top10-home");
-        if (!list || !container) return;
-        
-        const searchElement = document.getElementById("search-student");
-        const filterClassElement = document.getElementById("filter-students-class");
-        if (!searchElement || !filterClassElement) return;
-        
-        const searchVal = searchElement.value;
-        const classFilter = filterClassElement.value;
-        
-        // Only show Top 10 when not searching or filtering by class, to avoid clutter
-        if (searchVal || classFilter) {
-            container.style.display = "none";
-            return;
+// Helper to create a student row
+const createStudentRow = (s, rank = null) => {
+    const hasActivity = s._metrics.total > 0;
+    const color = hasActivity ? getAvatarColor(s.name) : '#ef4444';
+    const initials = getInitials(s.name);
+    const row = document.createElement('div');
+    row.className = 'student-row';
+    
+    let rankHtml = rank ? `<span style="color:var(--primary); font-weight:800; margin-right:0.5rem; font-size:0.9rem;">#${rank}</span>` : '';
+    
+    row.innerHTML = `
+        <div class="student-avatar" style="background:${color};">${initials}</div>
+        <div class="student-info">
+            <div class="student-name">${rankHtml}${s.name}</div>
+            <div class="student-class-tag">${s.class || 'Sem turma'}</div>
+        </div>
+        <div class="visto-badge${!hasActivity ? ' no-activity' : ''}">
+            <i class="fas fa-check-circle"></i>
+            ${s._metrics.completed}
+        </div>
+        <button class="student-row-edit" onclick="editStudentAction(event, '${s.id}')" aria-label="Editar aluno">
+            <i class="fas fa-pen"></i>
+        </button>
+        <i class="fas fa-chevron-right student-chevron"></i>
+    `;
+    row.addEventListener('click', (e) => {
+        if (!e.target.closest('.student-row-edit')) {
+            openStudentDetails(s.id);
         }
-
-        const students = DB.getStudents();
-        students.forEach(s => s._m = getStudentMetrics(s.id));
-        
-        // Sort by monthly completed tasks and take top 10
-        const top = students
-            .filter(s => s._m.completed > 0)
-            .sort((a, b) => b._m.completed - a._m.completed)
-            .slice(0, 10);
-
-        if (top.length === 0) {
-            container.style.display = "none";
-            return;
-        }
-
-        container.style.display = "block";
-        list.innerHTML = "";
-        
-        top.forEach((s, idx) => {
-            const row = document.createElement("div");
-            row.className = "top10-row";
-            const rankLabel = idx + 1;
-            
-            row.innerHTML = `
-                <div class="top10-rank">${rankLabel}</div>
-                <div class="top10-info">
-                    <div class="top10-name">
-                        ${s.name}, turma ${s.class || 'N/A'} - <strong>${s._m.completed} vistos</strong>
-                    </div>
-                </div>
-            `;
-            row.addEventListener('click', () => openStudentDetails(s.id));
-            list.appendChild(row);
-        });
-    } catch(e) {
-        console.error('Erro em renderTop10:', e);
-    }
+    });
+    return row;
 };
+
+// Remove the old renderTop10 as it's now integrated
+const renderTop10 = () => {};
 
 const initStudentFilters = () => {
     const searchElement = document.getElementById("search-student");
@@ -436,6 +445,18 @@ const initStudentFilters = () => {
     if (filterClassElement) filterClassElement.addEventListener('change', renderStudents);
     if (filterActivityElement) filterActivityElement.addEventListener('change', renderStudents);
     if (filterReportElement) filterReportElement.addEventListener('change', renderReports);
+
+    const btnClearFilters = document.getElementById("btn-clear-filters");
+    if (btnClearFilters) {
+        btnClearFilters.addEventListener('click', () => {
+            if (searchElement) searchElement.value = "";
+            if (sortElement) sortElement.value = "name-asc";
+            if (filterClassElement) filterClassElement.value = "";
+            if (filterActivityElement) filterActivityElement.value = "";
+            renderStudents();
+            showToast("Filtros limpos");
+        });
+    }
 };
 
 const openStudentDetails = (id) => {

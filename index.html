@@ -46,17 +46,6 @@
                     <input type="text" id="search-student" placeholder="Buscar aluno...">
                 </div>
 
-                <!-- Top 10 Section -->
-                <div id="top10-home" class="top10-section" style="display: none;">
-                    <div class="top10-header">
-                        <i class="fas fa-crown"></i>
-                        <span>Top 10 Alunos (Vistos no Mês)</span>
-                    </div>
-                    <div id="top10-list" class="list">
-                        <!-- Top 10 items will be injected here -->
-                    </div>
-                </div>
-
                 <div class="controls-row">
                     <div class="select-wrapper" style="flex: 1;">
                         <select id="filter-students-class">
@@ -74,7 +63,7 @@
                     </div>
                 </div>
 
-                <div class="controls-row" style="margin-top: 0.5rem;">
+                <div class="controls-row" style="margin-top: 0.5rem; gap: 0.5rem;">
                     <div class="select-wrapper" style="flex: 1;">
                         <select id="filter-students-activity">
                             <option value="">Todos os Alunos</option>
@@ -83,6 +72,9 @@
                         </select>
                         <i class="fas fa-chevron-down"></i>
                     </div>
+                    <button id="btn-clear-filters" class="btn-primary ripple" style="flex: 0.6; padding: 0.5rem; font-size: 0.8rem; background: var(--pending); color: white;">
+                        <i class="fas fa-filter-circle-xmark"></i> Limpar
+                    </button>
                 </div>
 
                 <div id="student-list" class="list">
