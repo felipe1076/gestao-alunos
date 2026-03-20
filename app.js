@@ -258,6 +258,7 @@ const renderStudents = () => {
     const query = document.getElementById("search-student").value.toLowerCase();
     const sort = document.getElementById("sort-students").value;
     const clsFilter = document.getElementById("filter-students-class").value;
+    const actFilter = document.getElementById("filter-students-activity").value;
 
     if (query) {
         students = students.filter(s => s.name.toLowerCase().includes(query) || (s.class && s.class.toLowerCase().includes(query)));
@@ -267,6 +268,12 @@ const renderStudents = () => {
     }
 
     students.forEach(s => s._metrics = getStudentMetrics(s.id));
+
+    if (actFilter === 'com') {
+        students = students.filter(s => s._metrics.total > 0);
+    } else if (actFilter === 'sem') {
+        students = students.filter(s => s._metrics.total === 0);
+    }
 
     if (sort === "name-asc") students.sort((a, b) => a.name.localeCompare(b.name));
     if (sort === "name-desc") students.sort((a, b) => b.name.localeCompare(a.name));
@@ -278,7 +285,7 @@ const renderStudents = () => {
         list.innerHTML = `
             <div class="empty-state">
                 <i class="fas fa-user-graduate"></i>
-                <p>Nenhum aluno encontrado.<br>Toque em <b>Novo Aluno</b> para começar.</p>
+                <p>Nenhum aluno encontrado.</p>
             </div>`;
         return;
     }
@@ -294,7 +301,8 @@ const renderStudents = () => {
     compactList.className = 'student-compact-list';
 
     students.forEach(s => {
-        const color = getAvatarColor(s.name);
+        const hasActivity = s._metrics.total > 0;
+        const color = hasActivity ? getAvatarColor(s.name) : '#ef4444';
         const initials = getInitials(s.name);
         const row = document.createElement('div');
         row.className = 'student-row';
@@ -304,7 +312,7 @@ const renderStudents = () => {
                 <div class="student-name">${s.name}</div>
                 <div class="student-class-tag">${s.class || 'Sem turma'}</div>
             </div>
-            <div class="visto-badge">
+            <div class="visto-badge${!hasActivity ? ' no-activity' : ''}">
                 <i class="fas fa-check-circle"></i>
                 ${s._metrics.completed}
             </div>
@@ -327,6 +335,8 @@ const renderStudents = () => {
 document.getElementById("search-student").addEventListener('input', renderStudents);
 document.getElementById("sort-students").addEventListener('change', renderStudents);
 document.getElementById("filter-students-class").addEventListener('change', renderStudents);
+document.getElementById("filter-students-activity").addEventListener('change', renderStudents);
+document.getElementById("filter-report-class").addEventListener('change', renderReports);
 
 const openStudentDetails = (id) => {
     currentStudentId = id;
@@ -458,15 +468,34 @@ const renderReports = () => {
     document.getElementById("report-geral-media").innerText = count ? sum.toFixed(1) : '-';
 
     students.forEach(s => s._m = getStudentMetrics(s.id));
-    let top = students.sort((a, b) => b._m.completed - a._m.completed).slice(0, 5);
+
+    // Apply class filter for ranking
+    const reportClassFilter = document.getElementById("filter-report-class").value;
+    let rankStudents = students.slice();
+    if (reportClassFilter) {
+        rankStudents = rankStudents.filter(s => s.class === reportClassFilter);
+    }
+
+    let top = rankStudents.sort((a, b) => b._m.completed - a._m.completed).slice(0, 5);
 
     const list = document.getElementById("report-top-students");
     list.innerHTML = "";
+
+    if (top.length === 0) {
+        list.innerHTML = `<p class="text-secondary ms-2">Nenhum aluno encontrado nesta turma.</p>`;
+        return;
+    }
+
     top.forEach((s, idx) => {
+        const medals = ['🥇','🥈','🥉'];
+        const medal = idx < 3 ? medals[idx] : `#${idx+1}`;
         list.innerHTML += `
             <div class="card glass mb-2">
                 <div class="card-top">
-                    <div><b>#${idx + 1}</b> ${s.name}</div>
+                    <div style="display:flex; flex-direction:column; gap:0.1rem;">
+                        <div><b>${medal}</b> ${s.name}</div>
+                        <span style="font-size:0.78rem; color:var(--text-secondary); padding-left:1.6rem;">${s.class || 'Sem turma'}</span>
+                    </div>
                     <span class="badge bg-success text-success">${s._m.completed} Vistos</span>
                 </div>
             </div>
@@ -554,12 +583,8 @@ document.getElementById("btn-bulk-students").addEventListener('click', () => {
 
 
 
-document.getElementById("btn-add-student").addEventListener('click', () => {
-    document.getElementById("form-student").reset();
-    document.getElementById("student-id").value = "";
-    document.getElementById("modal-student-title").innerText = "Novo Aluno";
-    openModal("modal-student");
-});
+// "Novo Aluno" button removed from student list view
+// Students can only be added via bulk registration in settings
 
 document.getElementById("form-bulk").addEventListener('submit', (e) => {
     e.preventDefault();
@@ -724,6 +749,9 @@ const renderClassesConfig = () => {
 
     const fClass = document.getElementById("filter-students-class");
     if (fClass) { const v1 = fClass.value; fClass.innerHTML = buildOpts("Todas as Turmas"); fClass.value = v1; }
+
+    const rClass = document.getElementById("filter-report-class");
+    if (rClass) { const vr = rClass.value; rClass.innerHTML = buildOpts("Geral (Todas)"); rClass.value = vr; }
 
     const sClass = document.getElementById("student-class");
     if (sClass) { const v2 = sClass.value; sClass.innerHTML = buildOpts("Selecione a Turma"); sClass.value = v2; }

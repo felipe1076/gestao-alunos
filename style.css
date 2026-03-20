@@ -1082,4 +1082,15 @@ select option {
     font-weight: 500;
     margin-bottom: 0.4rem;
     padding-left: 0.25rem;
+}
+
+/* Red badge for students with zero activities */
+.visto-badge.no-activity {
+    background: #fee2e2;
+    color: #ef4444;
+}
+
+[data-theme="dark"] .visto-badge.no-activity {
+    background: rgba(239, 68, 68, 0.18);
+    color: #f87171;
 }

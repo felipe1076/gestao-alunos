@@ -63,9 +63,16 @@
                     </div>
                 </div>
 
-                <button id="btn-add-student" class="btn-primary ripple w-100 mb-4" aria-label="Adicionar Aluno">
-                    <i class="fas fa-plus"></i> Novo Aluno
-                </button>
+                <div class="controls-row" style="margin-top: 0.5rem;">
+                    <div class="select-wrapper" style="flex: 1;">
+                        <select id="filter-students-activity">
+                            <option value="">Todos os Alunos</option>
+                            <option value="com">Com Atividade</option>
+                            <option value="sem">Sem Atividade</option>
+                        </select>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
 
                 <div id="student-list" class="list">
                     <!-- Cards -->
@@ -153,7 +160,15 @@
                     </div>
                 </div>
 
-                <h3 class="mt-4 ms-2">Ranking (Mais Tarefas)</h3>
+                <div class="controls-row mt-4" style="align-items: center;">
+                    <h3 class="ms-2" style="flex:1; margin: 0;">Ranking Top 5</h3>
+                    <div class="select-wrapper" style="flex: 1;">
+                        <select id="filter-report-class">
+                            <option value="">Geral (Todas)</option>
+                        </select>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
                 <div id="report-top-students" class="list mt-2">
                     <!-- Top students -->
                 </div>
